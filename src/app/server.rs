@@ -19,9 +19,11 @@ pub async fn start_server(state: SharedState) {
         .await
         .unwrap();
 
-    println!("WebSocket running on ws://127.0.0.1:3001/ws");
+    println!("WS running on ws://127.0.0.1:3001/ws");
 
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app.into_make_service())
+        .await
+        .unwrap();
 }
 
 async fn ws_handler(
@@ -37,19 +39,14 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
     loop {
         tokio::select! {
 
-            // React → Swarm
             Some(Ok(Message::Text(text))) = socket.recv() => {
-                println!("received from browser: {}", text);
-                let _ = state.tx_to_swarm.send(text.clone()).await;
-                let _ = state.tx_to_client.send(text);
+                let _ = state.tx_to_swarm.send(text).await;
             }
 
-            // Swarm → React
             Ok(msg) = rx.recv() => {
                 let _ = socket.send(Message::Text(msg)).await;
             }
 
-            // client disconnected
             else => break,
         }
     }

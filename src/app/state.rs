@@ -3,11 +3,9 @@ use tokio::sync::{mpsc, broadcast};
 
 /// Messages from React → Swarm
 pub type ToSwarmTx = mpsc::Sender<String>;
-pub type ToSwarmRx = mpsc::Receiver<String>;
 
 /// Messages from Swarm → all React clients
 pub type ToClientTx = broadcast::Sender<String>;
-pub type ToClientRx = broadcast::Receiver<String>;
 
 #[derive(Clone)]
 pub struct AppState {
