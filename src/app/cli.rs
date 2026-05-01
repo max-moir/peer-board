@@ -9,7 +9,11 @@ use libp2p::{
 use crate::core::{
     identity::parse_identity_path,
     identity::load_or_generate_identity,
-    message::{encode_message, decode_message},
+    message::{
+        encode_message,
+        decode_and_validate_message,
+        MessageDedup,
+    },
     swarm::build_swarm,
     swarm::ChatBehaviourEvent,
 };
@@ -26,15 +30,14 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let local_peer = *swarm.local_peer_id();
     println!("local peer: {local_peer}");
 
-    // ---------------- GOSSIP ----------------
+    let dedup = MessageDedup::default();
+
     let topic = gossipsub::IdentTopic::new(CHAT_TOPIC);
     swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
 
-    // ---------------- LISTEN ----------------
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
     swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
 
-    // ---------------- BOOTSTRAP ----------------
     let bootstrap_peer_id = "12D3KooWCvwqT3JUzVQczCvAVFa9EGzNqjHHSMVHVhm3RVyscCNY"
         .parse()?;
 
@@ -70,7 +73,6 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
             event = swarm.select_next_some() => match event {
 
-                // ---------------- CHAT MESSAGE ----------------
                 SwarmEvent::Behaviour(ChatBehaviourEvent::Gossipsub(
                     libp2p::gossipsub::Event::Message {
                         propagation_source,
@@ -78,8 +80,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                         ..
                     }
                 )) => {
-                    match decode_message(&message.data) {
-                        Ok(msg) => {
+
+                    match decode_and_validate_message(&message.data, &dedup) {
+                        Some(msg) => {
                             println!(
                                 "[{}] {}: {}",
                                 propagation_source,
@@ -87,15 +90,10 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 msg.content
                             );
                         }
-                        Err(_) => {
-                            println!(
-                                "[{}] <invalid message>",
-                                propagation_source
-                            );
+                        None => {
                         }
                     }
                 }
-
 
                 _ => {}
             }
