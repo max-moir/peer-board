@@ -1,0 +1,10 @@
+[package]
+name = "peer-board"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.50.0", features = ["full"] }
+async-trait = "0.1.89"
+futures = "0.3.32"
+libp2p = { version = "0.56", features = ["tokio", "gossipsub", "mdns", "noise", "macros", "tcp", "yamux", "quic"] }
