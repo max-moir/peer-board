@@ -8,3 +8,11 @@ tokio = { version = "1.50.0", features = ["full"] }
 async-trait = "0.1.89"
 futures = "0.3.32"
 libp2p = { version = "0.56", features = ["tokio", "gossipsub", "mdns", "noise", "identify", "kad", "macros", "tcp", "yamux", "quic"] }
+prost = "0.13"
+prost-types = "0.13"
+bytes = "1"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["clock"] }
+
+[build-dependencies]
+prost-build = "0.13"
