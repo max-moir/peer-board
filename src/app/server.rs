@@ -60,12 +60,18 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
             }
 
             Ok(msg) = rx.recv() => {
-                println!("MESSAFee");
-                let json = serde_json::to_string(&msg).unwrap_or_else(|_| {
-                    "{\"type\":\"error\"}".to_string()
-                });
 
-                let _ = socket.send(Message::Text(json)).await;
+                match msg {
+                    WsOutgoing::message { .. } => {
+                        println!("MESSAGE");
+
+                        if let Ok(json) = serde_json::to_string(&msg) {
+                            let _ = socket.send(Message::Text(json)).await;
+                        }
+                    }
+
+                    _ => {}
+                }
             }
 
             else => break,
