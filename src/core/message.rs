@@ -7,10 +7,6 @@ use uuid::Uuid;
 
 use crate::core::proto::peerboard::v1::PeerBoardMessage;
 
-// =========================================================
-// DEDUP STORE (in-memory)
-// =========================================================
-
 #[derive(Clone, Default)]
 pub struct MessageDedup {
     inner: Arc<Mutex<HashSet<String>>>,
@@ -28,7 +24,6 @@ impl MessageDedup {
     }
 }
 
-
 pub fn encode_message(
     peer_id: &str,
     topic: &str,
@@ -36,7 +31,6 @@ pub fn encode_message(
     nickname: String,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 
-    // UTF-8 byte length rules
     if content.as_bytes().len() > 4096 {
         return Err("content too large".into());
     }

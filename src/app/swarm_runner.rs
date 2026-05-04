@@ -18,7 +18,8 @@ pub async fn run_swarm(
     key: libp2p::identity::Keypair,
     db: MessageStore
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Build the libp2p swarm
+
+    // Build the swarm
     let mut swarm = build_swarm(key.clone())?;
     let local_peer = *swarm.local_peer_id();
 
@@ -31,7 +32,6 @@ pub async fn run_swarm(
     swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
     swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
 
-    // Simulate a bootstrap peer
     let bootstrap_peer_id = "12D3KooWCvwqT3JUzVQczCvAVFa9EGzNqjHHSMVHVhm3RVyscCNY"
         .parse()?;
     let bootstrap_addr = "/ip4/170.64.177.57/tcp/8000".parse::<libp2p::Multiaddr>()?;
@@ -41,11 +41,10 @@ pub async fn run_swarm(
 
     swarm.dial(bootstrap_addr)?;
 
-    // Set up the message channel for React → Swarm
 
     loop {
         tokio::select! {
-            // Receive messages from the WebSocket clients and send them to the swarm
+            // Receive from websocket
             Some(line) = rx.recv() => {
 
                 let content = line.clone();
@@ -72,7 +71,7 @@ pub async fn run_swarm(
                     .publish(topic.clone(), data);
             }
 
-            // Process events from the libp2p swarm
+            // Process events from the swarm
             event = swarm.select_next_some() => match event {
                 SwarmEvent::Behaviour(ChatBehaviourEvent::Gossipsub(
                     libp2p::gossipsub::Event::Message {
@@ -101,10 +100,9 @@ pub async fn run_swarm(
                             timestamp: current_timestamp(),
                         };
 
-                        // Store it (ignore errors for now, or log them)
                         let _ = db.insert_message(&db_msg);
 
-                        // Send the message to the WebSocket clients via the broadcast channel
+                        // Send message to websocket
                         let _ = tx_to_client.send(formatted);
                     }
                 }

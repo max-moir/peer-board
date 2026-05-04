@@ -1,10 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::{mpsc, broadcast};
 
-/// Messages from React → Swarm
 pub type ToSwarmTx = mpsc::Sender<String>;
-
-/// Messages from Swarm → all React clients
 pub type ToClientTx = broadcast::Sender<String>;
 
 #[derive(Clone)]
