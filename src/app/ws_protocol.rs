@@ -1,37 +1,29 @@
 use serde::{Deserialize, Serialize};
+use crate::core::db::{Message as DbMessage};
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type")]
 pub enum WsIncoming {
-    message {
-        topic: String,
-        payload: String,
-    },
-    history_request {
-        topic: String,
-    },
+    topic_history { topic: String },
+    send_message { topic: String, sender: String, content: String },
+    subscribe_topic { topic: String },
+    unsubscribe_topic { topic: String },
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum WsOutgoing {
-    message {
-        topic: String,
-        payload: String,
-        sender: String,
-        timestamp: i64,
-    },
     history_response {
         topic: String,
-        messages: Vec<String>,
+        messages: Vec<DbMessage>,
     },
+    message {
+        topic: String,
+        sender: String,
+        content: String,
+        timestamp: u64,
+    },
+    error {
+        message: String,
+    }
 }
-
-// #[derive(Debug, Serialize)]
-// pub struct DbMessage {
-//     pub message_id: String,
-//     pub topic: String,
-//     pub sender: String,
-//     pub content: String,
-//     pub timestamp: u64,
-// }

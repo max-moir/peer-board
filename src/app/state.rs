@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use tokio::sync::{mpsc, broadcast};
+use crate::app::ws_protocol::{WsIncoming, WsOutgoing};
 
-pub type ToSwarmTx = mpsc::Sender<String>;
-pub type ToClientTx = broadcast::Sender<String>;
+pub type ToSwarmTx = mpsc::Sender<WsIncoming>;
+pub type ToClientTx = broadcast::Sender<WsOutgoing>;
 
 #[derive(Clone)]
 pub struct AppState {

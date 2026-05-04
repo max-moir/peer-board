@@ -1,6 +1,7 @@
 use tokio::sync::mpsc;
 use futures_util::StreamExt;
 use libp2p::{gossipsub, swarm::SwarmEvent};
+use serde_json::json;
 
 use crate::{
     core::{
@@ -8,14 +9,15 @@ use crate::{
         message::{encode_message, decode_and_validate_message, MessageDedup},
         db::{MessageStore, Message as DbMessage, current_timestamp},
     },
+    app::ws_protocol::{WsIncoming, WsOutgoing}
 };
 
 
 const CHAT_TOPIC: &str = "peerboard/v1/general";
 
 pub async fn run_swarm(
-    mut rx: mpsc::Receiver<String>,
-    tx_to_client: tokio::sync::broadcast::Sender<String>,
+    mut rx: mpsc::Receiver<WsIncoming>,
+    tx_to_client: tokio::sync::broadcast::Sender<WsOutgoing>,
     key: libp2p::identity::Keypair,
     db: MessageStore
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -45,31 +47,53 @@ pub async fn run_swarm(
 
     loop {
         tokio::select! {
-            // Receive from websocket
-            Some(line) = rx.recv() => {
+            // Receive from websockeit
+            Some(msg) = rx.recv() => {
+                match msg {
 
-                let content = line.clone();
+                    WsIncoming::send_message { topic, sender, content } => {
 
-                let data = encode_message(
-                    &local_peer.to_string(),
-                    CHAT_TOPIC,
-                    line,
-                    "ma".to_string(),
-                )?;
+                        let data = encode_message(
+                            &local_peer.to_string(),
+                            &topic,
+                            content.clone(),
+                            sender.clone(),
+                        )?;
 
-                let db_msg = DbMessage {
-                    message_id: format!("local-{}", current_timestamp()),
-                    topic: CHAT_TOPIC.to_string(),
-                    sender: local_peer.to_string(),
-                    content,
-                    timestamp: current_timestamp(),
-                };
+                        let db_msg = DbMessage {
+                            message_id: format!("local-{}", current_timestamp()),
+                            topic: topic.clone(),
+                            sender,
+                            content,
+                            timestamp: current_timestamp(),
+                        };
 
-                let _ = db.insert_message(&db_msg);
+                        let _ = db.insert_message(&db_msg);
 
-                let _ = swarm.behaviour_mut()
-                    .gossipsub
-                    .publish(topic.clone(), data);
+                        let gossip_topic = gossipsub::IdentTopic::new(&topic);
+
+                        let _ = swarm.behaviour_mut()
+                            .gossipsub
+                            .publish(gossip_topic, data);
+                    }
+
+                    WsIncoming::subscribe_topic { topic } => {
+                        let _ = swarm.behaviour_mut()
+                            .gossipsub
+                            .subscribe(&gossipsub::IdentTopic::new(&topic));
+                    }
+
+                    WsIncoming::unsubscribe_topic { topic } => {
+                        let _ = swarm.behaviour_mut()
+                            .gossipsub
+                            .unsubscribe(&gossipsub::IdentTopic::new(&topic));
+                    }
+
+                    WsIncoming::topic_history { .. } => {
+                        // This should be handled in server
+                    }
+                }
+
             }
 
             // Process events from the swarm
@@ -83,14 +107,16 @@ pub async fn run_swarm(
                 )) => {
                     // Decode and validate the message, then send it to the WebSocket clients
                     if let Some(msg) = decode_and_validate_message(&message.data, &dedup) {
-                        let formatted = format!(
-                            "[{}] {}: {} {}",
-                            propagation_source,
-                            msg.nickname,
-                            msg.content,
-                            msg.topic
 
-                        );
+                        // Send message to front end
+                        let outgoing = WsOutgoing::message {
+                            topic: msg.topic.clone(),
+                            sender: msg.nickname.clone(),
+                            content: msg.content.clone(),
+                            timestamp: current_timestamp(),
+                        };
+
+                        let _ = tx_to_client.send(outgoing);
 
                         // Build DB message
                         let db_msg = DbMessage {
@@ -102,9 +128,6 @@ pub async fn run_swarm(
                         };
 
                         let _ = db.insert_message(&db_msg);
-
-                        // Send message to websocket
-                        let _ = tx_to_client.send(formatted);
                     }
                 }
                 _ => {}

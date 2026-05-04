@@ -44,24 +44,25 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
             Some(Ok(Message::Text(text))) = socket.recv() => {
                 let parsed = serde_json::from_str::<WsIncoming>(&text);
 
+                // Incoming websocket events
                 match parsed {
-                    // Incoming websocket events
-                    Ok(WsIncoming::message { topic, payload }) => {
-                        let msg = serde_json::json!({
-                            "topic": topic,
-                            "payload": payload
-                        });
+                    Ok(WsIncoming::topic_history { topic }) => {
+                        // Get message history by topic from database
+                    },
 
-                        let _ = state.tx_to_swarm.send(msg.to_string()).await;
+                    // Commands for swarm_runner
+                    Ok(incoming_command) => {
+                        let _ = state.tx_to_swarm.send(incoming_command).await;
                     },
-                    Ok(WsIncoming::history_request { topic }) => {
-                    },
+
                     Err(_) => todo!()
                 }
             }
 
             Ok(msg) = rx.recv() => {
-                let _ = socket.send(Message::Text(msg)).await;
+                println!("Message recv server");
+
+                let msg = socket.send(Message::Text("test".to_string())).await;
             }
 
             else => break,
