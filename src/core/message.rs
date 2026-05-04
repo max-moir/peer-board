@@ -28,9 +28,6 @@ impl MessageDedup {
     }
 }
 
-// =========================================================
-// ENCODE (outgoing messages)
-// =========================================================
 
 pub fn encode_message(
     peer_id: &str,
@@ -66,9 +63,6 @@ pub fn encode_message(
     Ok(buf)
 }
 
-// =========================================================
-// DECODE + VALIDATION (incoming messages)
-// =========================================================
 
 pub fn decode_and_validate_message(
     bytes: &[u8],

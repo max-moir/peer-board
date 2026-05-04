@@ -1,6 +1,7 @@
 pub mod server;
 pub mod state;
-pub mod swarm_runner;  // Import swarm runner
+pub mod swarm_runner;  
+use crate::core::db::MessageStore;
 
 use crate::app::{server::start_server, swarm_runner::run_swarm};
 use crate::core::identity::load_or_generate_identity;
@@ -22,9 +23,13 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         tx_to_client: tx_to_client.clone(),
     });
 
+
+    // Create db
+    let db = MessageStore::new("chat.db")?;
+
     // Spawn the swarm runtime as a background task
     tokio::spawn(async move {
-        if let Err(err) = run_swarm(rx_to_swarm, tx_to_client, key).await {
+        if let Err(err) = run_swarm(rx_to_swarm, tx_to_client, key, db).await {
             eprintln!("swarm task error: {err}");
         }
     });

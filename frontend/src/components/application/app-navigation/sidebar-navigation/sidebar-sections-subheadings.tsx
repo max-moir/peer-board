@@ -4,9 +4,7 @@ import { ThemeToggle } from "@/components/base/theme-toggle";
 import type { NavItemType } from "../config";
 
 interface SidebarNavigationSectionsSubheadingsProps {
-  /** URL of the currently active item. */
   activeUrl?: string;
-  /** List of items to display (General section). */
   items: Array<{ label: string; items: NavItemType[] }>;
 }
 
@@ -16,7 +14,6 @@ export const SidebarNavigationSectionsSubheadings = ({
 }: SidebarNavigationSectionsSubheadingsProps) => {
   const MAIN_SIDEBAR_WIDTH = 292;
 
-  // 🔹 Dynamic channels state
   const [channels, setChannels] = React.useState<string[]>([
     "general",
     "random",

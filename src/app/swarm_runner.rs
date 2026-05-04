@@ -6,6 +6,7 @@ use crate::{
     core::{
         swarm::{build_swarm, ChatBehaviourEvent},
         message::{encode_message, decode_and_validate_message, MessageDedup},
+        db::{MessageStore, Message as DbMessage, current_timestamp},
     },
 };
 
@@ -15,6 +16,7 @@ pub async fn run_swarm(
     mut rx: mpsc::Receiver<String>,
     tx_to_client: tokio::sync::broadcast::Sender<String>,
     key: libp2p::identity::Keypair,
+    db: MessageStore
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Build the libp2p swarm
     let mut swarm = build_swarm(key.clone())?;
@@ -45,6 +47,9 @@ pub async fn run_swarm(
         tokio::select! {
             // Receive messages from the WebSocket clients and send them to the swarm
             Some(line) = rx.recv() => {
+
+                let content = line.clone();
+
                 let data = encode_message(
                     &local_peer.to_string(),
                     CHAT_TOPIC,
@@ -52,7 +57,16 @@ pub async fn run_swarm(
                     "ma".to_string(),
                 )?;
 
-                // Publish to the gossip network
+                let db_msg = DbMessage {
+                    message_id: format!("local-{}", current_timestamp()),
+                    topic: CHAT_TOPIC.to_string(),
+                    sender: local_peer.to_string(),
+                    content,
+                    timestamp: current_timestamp(),
+                };
+
+                let _ = db.insert_message(&db_msg);
+
                 let _ = swarm.behaviour_mut()
                     .gossipsub
                     .publish(topic.clone(), data);
@@ -70,11 +84,25 @@ pub async fn run_swarm(
                     // Decode and validate the message, then send it to the WebSocket clients
                     if let Some(msg) = decode_and_validate_message(&message.data, &dedup) {
                         let formatted = format!(
-                            "[{}] {}: {}",
+                            "[{}] {}: {} {}",
                             propagation_source,
                             msg.nickname,
-                            msg.content
+                            msg.content,
+                            msg.topic
+
                         );
+
+                        // Build DB message
+                        let db_msg = DbMessage {
+                            message_id: msg.message_id.to_string(), 
+                            topic: msg.topic.clone(),
+                            sender: msg.nickname.clone(),
+                            content: msg.content.clone(),
+                            timestamp: current_timestamp(),
+                        };
+
+                        // Store it (ignore errors for now, or log them)
+                        let _ = db.insert_message(&db_msg);
 
                         // Send the message to the WebSocket clients via the broadcast channel
                         let _ = tx_to_client.send(formatted);
