@@ -19,24 +19,14 @@ const navItemsWithSectionsSubheadings: Array<{
     label: "General",
     items: [
       {
-        label: "Dashboard",
+        label: "Chat",
         href: "/",
         icon: BarChartSquare02,
       },
       {
-        label: "Projects",
-        href: "/projects",
-        icon: Rows01,
-      },
-      {
-        label: "Documents",
+        label: "About",
         href: "/documents",
         icon: File05,
-      },
-      {
-        label: "Calendar",
-        href: "/calendar",
-        icon: Calendar,
       },
     ],
   },

@@ -57,7 +57,7 @@ export const SidebarNavigationSectionsSubheadings = ({
       {/* Header */}
       <div className="flex flex-col gap-5 px-4 lg:px-5">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-primary">PeerBoard</h1>
+          <h1 className="text-3xl font-bold text-primary">PeerBoard</h1>
 
           <ThemeToggle />
         </div>
@@ -107,7 +107,7 @@ export const SidebarNavigationSectionsSubheadings = ({
 
           <ul className="px-4 pb-5">
             {channels.map((channel) => {
-              const href = `/channels/${channel}`;
+              const href = `/topics/${channel}`;
               return (
                 <li
                   key={channel}
