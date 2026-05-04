@@ -1,7 +1,4 @@
 import React from "react";
-import { UntitledLogo } from "@/components/foundations/logo/untitledui-logo";
-import { MobileNavigationHeader } from "../base-components/mobile-header";
-import { NavAccountCard } from "../base-components/nav-account-card";
 import { NavItemBase } from "../base-components/nav-item";
 import { ThemeToggle } from "@/components/base/theme-toggle";
 import type { NavItemType } from "../config";
@@ -54,7 +51,8 @@ export const SidebarNavigationSectionsSubheadings = ({
       {/* Header */}
       <div className="flex flex-col gap-5 px-4 lg:px-5">
         <div className="flex items-center justify-between">
-          <UntitledLogo className="h-8" />
+          <h1 className="text-xl font-bold text-primary">PeerBoard</h1>
+
           <ThemeToggle />
         </div>
       </div>

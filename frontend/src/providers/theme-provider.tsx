@@ -58,7 +58,7 @@ export const ThemeProvider = ({
       const root = window.document.documentElement;
 
       if (theme === "system") {
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        const systemTheme = window.matchMedia("(prefers-color-scheme: light)")
           .matches
           ? "dark"
           : "light";
