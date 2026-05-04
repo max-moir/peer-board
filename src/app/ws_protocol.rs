@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::core::db::{Message as DbMessage};
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum WsIncoming {
     topic_history { topic: String },
@@ -10,7 +10,7 @@ pub enum WsIncoming {
     unsubscribe_topic { topic: String },
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum WsOutgoing {
     history_response {

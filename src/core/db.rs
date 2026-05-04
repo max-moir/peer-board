@@ -2,7 +2,7 @@ use rusqlite::{params, Connection, Result};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Message {
     pub message_id: String,
     pub topic: String,

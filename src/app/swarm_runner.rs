@@ -116,6 +116,7 @@ pub async fn run_swarm(
                             timestamp: current_timestamp(),
                         };
 
+                        println!("swarm mesg");
                         let _ = tx_to_client.send(outgoing);
 
                         // Build DB message
