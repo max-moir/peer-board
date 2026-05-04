@@ -1,6 +1,7 @@
 pub mod server;
 pub mod state;
 pub mod swarm_runner;  
+pub mod ws_protocol;
 use crate::core::db::MessageStore;
 
 use crate::app::{server::start_server, swarm_runner::run_swarm};

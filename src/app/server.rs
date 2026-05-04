@@ -9,6 +9,8 @@ use axum::{
 };
 
 use crate::app::state::SharedState;
+use crate::app::ws_protocol::{WsIncoming, WsOutgoing};
+
 
 pub async fn start_server(state: SharedState) {
     let app = Router::new()
@@ -40,7 +42,22 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
         tokio::select! {
 
             Some(Ok(Message::Text(text))) = socket.recv() => {
-                let _ = state.tx_to_swarm.send(text).await;
+                let parsed = serde_json::from_str::<WsIncoming>(&text);
+
+                match parsed {
+                    // Incoming websocket events
+                    Ok(WsIncoming::message { topic, payload }) => {
+                        let msg = serde_json::json!({
+                            "topic": topic,
+                            "payload": payload
+                        });
+
+                        let _ = state.tx_to_swarm.send(msg.to_string()).await;
+                    },
+                    Ok(WsIncoming::history_request { topic }) => {
+                    },
+                    Err(_) => todo!()
+                }
             }
 
             Ok(msg) = rx.recv() => {

@@ -10,6 +10,7 @@ use crate::{
     },
 };
 
+
 const CHAT_TOPIC: &str = "peerboard/v1/general";
 
 pub async fn run_swarm(
