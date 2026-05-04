@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { SidebarNavigationSectionDividers } from "@/components/application/app-navigation/sidebar-navigation/sidebar-section-dividers";
-import { navItemsWithDividers } from "@/components/page";
+import { SidebarNavigationSectionsSubheadingsDemo } from "@/components/sidebar";
 
 export default function App() {
   const [input, setInput] = useState("");
@@ -35,16 +34,16 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen">
-      <SidebarNavigationSectionDividers
-        activeUrl="/"
-        items={navItemsWithDividers}
-      />
-      <main className="flex-1 p-5 overflow-auto">
-        <h2>Peerboard</h2>
-        <p>Status: {connected ? "Connected" : "Disconnected"}</p>
+    <div className="flex h-screen bg-background-dark">
+      <SidebarNavigationSectionsSubheadingsDemo />
 
-        <div className="mb-4">
+      <main className="flex-1 p-5 bg-primary text-quaternary overflow-auto">
+        <h2 className="text-2xl font-bold mb-4">Peerboard</h2>
+        <p className="text-lg mb-2">
+          Status: {connected ? "Connected" : "Disconnected"}
+        </p>
+
+        <div className="mb-4 flex gap-2 items-center">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -53,7 +52,7 @@ export default function App() {
                 sendMessage();
               }
             }}
-            className="w-3/4 mr-2 p-2 border rounded"
+            className="flex-1 p-2 border border-gray-300 rounded"
             placeholder="Type a message..."
           />
           <button
@@ -64,8 +63,8 @@ export default function App() {
           </button>
         </div>
 
-        <div>
-          <h3>Messages</h3>
+        <div className="bg-card-light shadow-md p-4">
+          <h3 className="text-xl font-semibold mb-2">Messages</h3>
           <div className="min-h-48 border border-gray-300 p-3">
             {messages.length === 0 ? (
               <div className="text-gray-500">No messages yet.</div>
