@@ -25,6 +25,12 @@ export const SidebarNavigationSectionsSubheadings = ({
   const addChannel = () => {
     const name = prompt("Channel name?");
     if (!name) return;
+    if (!name || !/^[a-z0-9-]+$/.test(name)) {
+      alert(
+        "Channel name must only contain lowercase letters, numbers, and hyphens.",
+      );
+      return;
+    }
 
     const trimmed = name.trim();
     if (!trimmed) return;
