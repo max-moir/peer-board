@@ -77,4 +77,3 @@ export const SidebarSectionDividersDemo = () => (
     items={navItemsWithDividers}
   />
 );
-Need help? Check our GitHub repository for examples, or open an issue if you run into any problems. Our community is here to help!

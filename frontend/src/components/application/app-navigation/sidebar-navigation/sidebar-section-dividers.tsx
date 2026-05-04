@@ -31,7 +31,7 @@ export const SidebarNavigationSectionDividers = ({
       <div className="flex flex-col gap-5 px-4 lg:px-5">
         <div className="flex items-center justify-between">
           <UntitledLogo className="h-8" />
-          {/* <ThemeToggle /> */}
+          <ThemeToggle />
         </div>
       </div>
 
