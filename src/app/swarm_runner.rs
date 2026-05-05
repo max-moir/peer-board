@@ -1,6 +1,6 @@
 use tokio::sync::mpsc;
 use futures_util::StreamExt;
-use libp2p::{gossipsub, swarm::SwarmEvent, rendezvous};
+use libp2p::{gossipsub, swarm::SwarmEvent, rendezvous, Multiaddr};
 use serde_json::json;
 
 use crate::{
@@ -16,6 +16,7 @@ use crate::{
 const CHAT_TOPIC: &str = "peerboard/v1/general";
 const CHALLENGE_NS: &str = "peerboard/challenge/seeking";
 const BATTLESHIP_PATH: &str = "peerboard/challenge/1.0.0";
+const BOOTSTRAP_NODE: &str = "/ip4/170.64.177.57/tcp/8000/p2p/12D3KooWCvwqT3JUzVQczCvAVFa9EGzNqjHHSMVHVhm3RVyscCNY";
 
 pub async fn run_swarm(
     mut rx: mpsc::Receiver<WsIncoming>,
@@ -23,6 +24,8 @@ pub async fn run_swarm(
     key: libp2p::identity::Keypair,
     db: std::sync::Arc<MessageStore>
 ) -> Result<(), Box<dyn std::error::Error>> {
+
+
 
     // Build the swarm
     let mut swarm = build_swarm(key.clone())?;
@@ -33,18 +36,13 @@ pub async fn run_swarm(
 
     swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
 
-    // Listen on both TCP and QUIC
-    swarm.listen_on("/ip4/0.0.0.0/tcp/0".parse()?)?;
-    swarm.listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse()?)?;
+    let listen_addr: Multiaddr = "/ip4/0.0.0.0/tcp/0".parse()?;
+    swarm.listen_on(listen_addr.clone())?;
+    swarm.add_external_address(listen_addr);
 
+    let bootstrap_addr: Multiaddr = BOOTSTRAP_NODE.parse()?;
     let bootstrap_peer_id = "12D3KooWCvwqT3JUzVQczCvAVFa9EGzNqjHHSMVHVhm3RVyscCNY"
         .parse()?;
-    let bootstrap_addr = "/ip4/170.64.177.57/tcp/8000".parse::<libp2p::Multiaddr>()?;                        
-                        
-                        
-                        
-                        
-                        
                         
     swarm.behaviour_mut()
         .kademlia
@@ -111,22 +109,24 @@ pub async fn run_swarm(
 
                     },
                     WsIncoming::register_for_game{ nickname }  => {
+                        use rendezvous::Namespace;
+                        println!("seeking");
+
+                        let ns = Namespace::new("peerboard/challenge/seeking".to_string()).unwrap();
+
+                        match swarm.behaviour_mut().rendezvous.register(ns, bootstrap_peer_id, None) {
+                            Ok(_) => {println!("Worked");}
+                            Err(e) => {println!("{}", e);}
+                        }
+
                         let _ = swarm.behaviour_mut()
                             .rendezvous
-                            .register(
-                                rendezvous::Namespace::from_static("peerboard/challenge/seeking"),
-                                bootstrap_peer_id,
+                            .discover(
+                                Some(rendezvous::Namespace::from_static("peerboard/challenge/seeking")),
                                 None,
+                                Some(10),
+                                bootstrap_peer_id,
                             );
-                        println!("Seeking");
-                            let _ = swarm.behaviour_mut()
-                                .rendezvous
-                                .discover(
-                                    Some(rendezvous::Namespace::from_static("peerboard/challenge/seeking")),
-                                    None,
-                                    Some(10),
-                                    bootstrap_peer_id,
-                                );
                     },
 
                     WsIncoming::unregister_for_game{ }  => {
