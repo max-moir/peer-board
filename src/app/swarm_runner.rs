@@ -186,21 +186,16 @@ pub async fn run_swarm(
 
                     match event {
                         Event::Registered { namespace, ttl, .. } => {
-                            println!("✅ Registered on namespace {:?} for {} seconds", namespace, ttl);
+                            println!("Registered on namespace {:?} for {} seconds", namespace, ttl);
                         },
                         Event::Discovered { rendezvous_node, registrations, cookie } => {
-                            println!("🔎 Discovered {} registrations from rendezvous node {}", registrations.len(), rendezvous_node);
+                            println!("Discovered {} registrations from rendezvous node {}", registrations.len(), rendezvous_node);
                             for reg in registrations {
-                                println!(" - Peer: {:?}", reg.record);
+                                let peer_id = &reg.record.peer_id();
+                                println!(" - Peer ID: {}", peer_id);
                             }
                         },
-                        Event::RegisterFailed { namespace, error, rendezvous_node } => {
-                            eprintln!("❌ Failed to register on namespace {:?}: {:?}", namespace, error);
-                        },
-                        Event::DiscoverFailed { namespace, error, ..} => {
-                            eprintln!("❌ Discovery failed on namespace {:?}: {:?}", namespace, error);
-                        },
-                        Event::Expired { .. } => todo!(),
+                        _ => {}
                     }
                 },
         _ => {}
