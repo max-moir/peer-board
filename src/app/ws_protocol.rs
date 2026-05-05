@@ -21,6 +21,9 @@ pub enum WsOutgoing {
         message_id: String,
         nickname: String,
     },
+    local_id {
+        id: String,
+    },
     history_response {
         messages: Vec<DbMessage>,
     },

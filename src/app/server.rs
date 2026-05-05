@@ -60,6 +60,8 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                                 if let Ok(json) = serde_json::to_string(&outgoing) {
                                     let _ = socket.send(Message::Text(json)).await;
                                 }
+
+                                let _ = state.tx_to_swarm.send(WsIncoming::history {}).await;
                             }
 
                             Err(e) => {
@@ -94,6 +96,11 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                     WsOutgoing::message { .. } => {
                         println!("MESSAGE");
 
+                        if let Ok(json) = serde_json::to_string(&msg) {
+                            let _ = socket.send(Message::Text(json)).await;
+                        }
+                    },
+                    WsOutgoing::local_id { .. } => {
                         if let Ok(json) = serde_json::to_string(&msg) {
                             let _ = socket.send(Message::Text(json)).await;
                         }

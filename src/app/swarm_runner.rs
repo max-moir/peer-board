@@ -95,7 +95,12 @@ pub async fn run_swarm(
                     }
 
                     WsIncoming::history { .. } => {
-                        // This should be handled in server
+                        let outgoing = WsOutgoing::local_id {
+                            id: local_peer.to_string(),
+                        };
+
+                        let _ = tx_to_client.send(outgoing);
+
                     }
                 }
 

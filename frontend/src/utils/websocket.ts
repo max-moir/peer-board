@@ -31,6 +31,10 @@ export type WsOutgoing =
       messages: WsMessage[];
     }
   | {
+      type: "local_id";
+      id: string;
+    }
+  | {
       type: "error";
       message: string;
     };

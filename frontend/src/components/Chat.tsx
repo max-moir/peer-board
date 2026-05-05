@@ -16,6 +16,7 @@ export default function Chat() {
 
   // Editable identity + topic
   const [nickname, setNickname] = useState("ma");
+  const [localId, setLocalId] = useState();
   const [activeTopic, setActiveTopic] = useState("general");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -70,6 +71,11 @@ export default function Chat() {
       );
     }
 
+    if (msg.type === "local_id") {
+      console.log(msg.id);
+      setLocalId(msg.id);
+    }
+
     if (msg.type === "message") {
       setMessages((prev) => {
         const exists = prev.some((m) => m.message_id === msg.message_id);
@@ -97,7 +103,7 @@ export default function Chat() {
     const localMessageId = `local-${Date.now()}`;
 
     const optimistic: ChatMessage = {
-      peer_id: "local", // temporary until server echoes peer_id
+      peer_id: localId,
       nickname,
       content: input.trim(),
       timestamp: Math.floor(Date.now() / 1000),
@@ -112,7 +118,7 @@ export default function Chat() {
   };
 
   const MessageItem = ({ msg }: { msg: ChatMessage }) => {
-    const isSelf = msg.nickname === nickname;
+    const isSelf = msg.peer_id === localId;
     return (
       <div className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
         <div className="text-xs text-[var(--color-text-tertiary)] mb-1">
@@ -147,7 +153,7 @@ export default function Chat() {
             Chat
           </h2>
           <p className="text-sm text-[var(--color-text-tertiary)]">
-            {connected ? "Connected" : "Disconnected"}
+            {connected ? `Connected with local id ${localId}` : "Disconnected"}
           </p>
         </div>
 
