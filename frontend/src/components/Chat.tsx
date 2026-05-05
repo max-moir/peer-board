@@ -10,7 +10,7 @@ export default function Chat() {
 
   useEffect(() => {
     const wsClient = new WebSocketClient("ws://127.0.0.1:3001/ws", {
-      onOpen: () => setConnected(true),
+      onOpen: () => handleStartup(),
       // onMessage: (msg) => setMessages((prev) => [...prev, msg.content]),
       onMessage: (msg) => handleResponse(msg),
       onClose: () => setConnected(false),
@@ -23,14 +23,21 @@ export default function Chat() {
     };
   }, []);
 
+  const handleStartup = () => {
+    setConnected(true);
+    wsClientRef.current.requestHistory("general");
+  };
+
   const handleResponse = (msg) => {
     console.log(msg);
-    setMessages((prev) => [...prev, msg.content]);
+    if (msg.type == "message") {
+      setMessages((prev) => [...prev, msg.content]);
+    }
   };
 
   const sendMessage = () => {
     if (input.trim() && wsClientRef.current) {
-      wsClientRef.current.sendMessage("general", "tset", input.trim());
+      wsClientRef.current.sendMessage("general", "ma", input.trim());
       setInput("");
     }
   };
