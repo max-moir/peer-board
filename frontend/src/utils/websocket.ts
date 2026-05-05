@@ -14,8 +14,7 @@ export type WsIncoming =
       topic: string;
     }
   | {
-      type: "topic_history";
-      topic: string;
+      type: "history";
     };
 
 export type WsOutgoing =
@@ -107,10 +106,9 @@ export class WebSocketClient {
     });
   }
 
-  requestHistory(topic: string) {
+  requestHistory() {
     this.send({
-      type: "topic_history",
-      topic,
+      type: "history",
     });
   }
 

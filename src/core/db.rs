@@ -53,17 +53,16 @@ impl MessageStore {
         Ok(())
     }
 
-    pub fn get_messages_for_topic(&self, topic: &str) -> Result<Vec<Message>> {
+    pub fn get_all_messages(&self) -> Result<Vec<Message>> {
         let conn = self.conn.lock().unwrap();
 
         let mut stmt = conn.prepare(
             "SELECT message_id, topic, sender, content, timestamp
             FROM messages
-            WHERE topic = ?
             ORDER BY timestamp ASC"
         )?;
 
-        let message_iter = stmt.query_map(params![topic], |row| {
+        let message_iter = stmt.query_map([], |row| {
             Ok(Message {
                 message_id: row.get(0)?,
                 topic: row.get(1)?,

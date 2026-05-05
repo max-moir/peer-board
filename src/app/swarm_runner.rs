@@ -52,7 +52,6 @@ pub async fn run_swarm(
                 match msg {
 
                     WsIncoming::send_message { topic, sender, content } => {
-
                         let full_topic = format!("peerboard/v1/{}", topic);
 
                         let data = encode_message(
@@ -81,6 +80,7 @@ pub async fn run_swarm(
 
                     WsIncoming::subscribe_topic { topic } => {
                         let full_topic = format!("peerboard/v1/{}", topic);
+
                         let _ = swarm.behaviour_mut()
                             .gossipsub
                             .subscribe(&gossipsub::IdentTopic::new(&full_topic));
@@ -93,7 +93,7 @@ pub async fn run_swarm(
                             .unsubscribe(&gossipsub::IdentTopic::new(&full_topic));
                     }
 
-                    WsIncoming::topic_history { .. } => {
+                    WsIncoming::history { .. } => {
                         // This should be handled in server
                     }
                 }
@@ -120,7 +120,6 @@ pub async fn run_swarm(
                             timestamp: current_timestamp(),
                         };
 
-                        println!("swarm mesg");
                         let _ = tx_to_client.send(outgoing);
 
                         // Build DB message

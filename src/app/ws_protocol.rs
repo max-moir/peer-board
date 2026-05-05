@@ -4,7 +4,7 @@ use crate::core::db::{Message as DbMessage};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum WsIncoming {
-    topic_history { topic: String },
+    history {},
     send_message { topic: String, sender: String, content: String },
     subscribe_topic { topic: String },
     unsubscribe_topic { topic: String },
@@ -14,7 +14,6 @@ pub enum WsIncoming {
 #[serde(tag = "type")]
 pub enum WsOutgoing {
     history_response {
-        topic: String,
         messages: Vec<DbMessage>,
     },
     message {

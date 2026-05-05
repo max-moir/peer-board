@@ -6,12 +6,15 @@ type ChatMessage = {
   sender: string;
   content: string;
   timestamp: number;
+  topic: string;
 };
 
 export default function Chat() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
+
+  const [topics] = useState<string[]>(["general", "random"]);
 
   const wsClientRef = useRef<WebSocketClient | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -37,7 +40,11 @@ export default function Chat() {
 
   const handleStartup = () => {
     setConnected(true);
-    wsClientRef.current?.requestHistory("general");
+    wsClientRef.current?.requestHistory();
+
+    topics.forEach((t) => {
+      wsClientRef.current?.subscribe(t);
+    });
   };
 
   const handleResponse = (msg: any) => {
@@ -49,6 +56,7 @@ export default function Chat() {
           sender: m.sender,
           content: m.content,
           timestamp: m.timestamp,
+          topic: msg.topic,
         })),
       );
     }
@@ -59,7 +67,8 @@ export default function Chat() {
           (m) =>
             m.content === msg.content &&
             m.timestamp === msg.timestamp &&
-            m.sender === msg.sender,
+            m.sender === msg.sender &&
+            m.topic === msg.topic,
         );
 
         if (exists) return prev;
@@ -70,6 +79,7 @@ export default function Chat() {
             sender: msg.sender,
             content: msg.content,
             timestamp: msg.timestamp,
+            topic: msg.topic,
           },
         ];
       });
@@ -78,13 +88,13 @@ export default function Chat() {
 
   const sendMessage = () => {
     if (input.trim() && wsClientRef.current) {
-      const optimistic = {
+      const optimistic: ChatMessage = {
         sender: "ma",
         content: input.trim(),
         timestamp: Math.floor(Date.now() / 1000),
+        topic: "general",
       };
 
-      // Optimistic UI update
       setMessages((prev) => [...prev, optimistic]);
 
       wsClientRef.current.sendMessage("general", "ma", input.trim());
@@ -102,7 +112,8 @@ export default function Chat() {
     return (
       <div className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
         <div className="text-xs text-[var(--color-text-tertiary)] mb-1">
-          {msg.sender} • {new Date(msg.timestamp * 1000).toLocaleTimeString()}
+          #{msg.topic} • {msg.sender} •{" "}
+          {new Date(msg.timestamp * 1000).toLocaleTimeString()}
         </div>
 
         <div
@@ -129,11 +140,27 @@ export default function Chat() {
         {/* Header */}
         <div className="px-5 py-3 border-b border-[var(--color-border-secondary)] shrink-0">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
-            # General
+            Chat
           </h2>
           <p className="text-sm text-[var(--color-text-tertiary)]">
             {connected ? "Connected" : "Disconnected"}
           </p>
+        </div>
+
+        {/* Topics */}
+        <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
+          {topics.map((t) => (
+            <span
+              key={t}
+              className="
+                text-xs px-2 py-1 rounded-full
+                bg-[var(--color-border-secondary)]
+                text-[var(--color-text-secondary)]
+              "
+            >
+              #{t}
+            </span>
+          ))}
         </div>
 
         {/* Messages */}
