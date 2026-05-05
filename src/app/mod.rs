@@ -17,20 +17,20 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Create the channels for communication between React, Axum, and libp2p
     let (tx_to_swarm, rx_to_swarm) = mpsc::channel::<WsIncoming>(100);
     let (tx_to_client, _rx_to_client) = broadcast::channel::<WsOutgoing>(100);
+    let db = Arc::new(MessageStore::new("chat.db")?);
 
     // Create shared state (AppState)
     let state = Arc::new(state::AppState {
         tx_to_swarm,
         tx_to_client: tx_to_client.clone(),
+        db: db.clone()
     });
 
 
-    // Create db
-    let db = MessageStore::new("chat.db")?;
 
     // Spawn the swarm runtime as a background task
     tokio::spawn(async move {
-        if let Err(err) = run_swarm(rx_to_swarm, tx_to_client, key, db).await {
+        if let Err(err) = run_swarm(rx_to_swarm, tx_to_client, key, db.clone()).await {
             eprintln!("swarm task error: {err}");
         }
     });

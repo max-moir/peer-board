@@ -48,7 +48,30 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                 match parsed {
                     Ok(WsIncoming::topic_history { topic }) => {
                         println!("History request");
-                        // Get message history by topic from database
+
+                        match state.db.get_messages_for_topic(&topic) {
+                            Ok(messages) => {
+                                let outgoing = WsOutgoing::history_response {
+                                    topic,
+                                    messages,
+                                };
+
+                                if let Ok(json) = serde_json::to_string(&outgoing) {
+                                    let _ = socket.send(Message::Text(json)).await;
+                                }
+                            }
+
+                            Err(e) => {
+                                let err = WsOutgoing::error {
+                                    message: format!("DB error: {e}"),
+                                };
+
+                                let _ = socket.send(
+                                    Message::Text(serde_json::to_string(&err).unwrap())
+                                ).await;
+                            }
+                        }
+
                     },
 
                     // Commands for swarm_runner

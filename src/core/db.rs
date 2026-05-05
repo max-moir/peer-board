@@ -12,7 +12,7 @@ pub struct Message {
 }
 
 pub struct MessageStore {
-    conn: Connection,
+    conn: std::sync::Mutex<Connection>,
 }
 
 impl MessageStore {
@@ -30,31 +30,39 @@ impl MessageStore {
             [],
         )?;
 
-        Ok(MessageStore { conn })
+        Ok(MessageStore {
+            conn: std::sync::Mutex::new(conn),
+        })
     }
 
     pub fn insert_message(&self, message: &Message) -> Result<()> {
-        let mut stmt = self.conn.prepare("SELECT COUNT(*) FROM messages WHERE message_id = ?")?;
-        let count: i64 = stmt.query_row(params![message.message_id], |row| row.get(0))?;
+        let conn = self.conn.lock().unwrap();
 
-        if count == 0 {
-            self.conn.execute(
-                "INSERT INTO messages (message_id, topic, sender, content, timestamp) VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![
-                    message.message_id,
-                    message.topic,
-                    message.sender,
-                    message.content,
-                    message.timestamp
-                ],
-            )?;
-        }
+        conn.execute(
+            "INSERT OR IGNORE INTO messages (message_id, topic, sender, content, timestamp)
+            VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                message.message_id,
+                message.topic,
+                message.sender,
+                message.content,
+                message.timestamp
+            ],
+        )?;
 
         Ok(())
     }
 
     pub fn get_messages_for_topic(&self, topic: &str) -> Result<Vec<Message>> {
-        let mut stmt = self.conn.prepare("SELECT message_id, topic, sender, content, timestamp FROM messages WHERE topic = ?")?;
+        let conn = self.conn.lock().unwrap();
+
+        let mut stmt = conn.prepare(
+            "SELECT message_id, topic, sender, content, timestamp
+            FROM messages
+            WHERE topic = ?
+            ORDER BY timestamp ASC"
+        )?;
+
         let message_iter = stmt.query_map(params![topic], |row| {
             Ok(Message {
                 message_id: row.get(0)?,

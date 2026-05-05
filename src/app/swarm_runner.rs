@@ -19,7 +19,7 @@ pub async fn run_swarm(
     mut rx: mpsc::Receiver<WsIncoming>,
     tx_to_client: tokio::sync::broadcast::Sender<WsOutgoing>,
     key: libp2p::identity::Keypair,
-    db: MessageStore
+    db: std::sync::Arc<MessageStore>
 ) -> Result<(), Box<dyn std::error::Error>> {
 
     // Build the swarm
@@ -80,15 +80,17 @@ pub async fn run_swarm(
                     }
 
                     WsIncoming::subscribe_topic { topic } => {
+                        let full_topic = format!("peerboard/v1/{}", topic);
                         let _ = swarm.behaviour_mut()
                             .gossipsub
-                            .subscribe(&gossipsub::IdentTopic::new(&topic));
+                            .subscribe(&gossipsub::IdentTopic::new(&full_topic));
                     }
 
                     WsIncoming::unsubscribe_topic { topic } => {
+                        let full_topic = format!("peerboard/v1/{}", topic);
                         let _ = swarm.behaviour_mut()
                             .gossipsub
-                            .unsubscribe(&gossipsub::IdentTopic::new(&topic));
+                            .unsubscribe(&gossipsub::IdentTopic::new(&full_topic));
                     }
 
                     WsIncoming::topic_history { .. } => {
