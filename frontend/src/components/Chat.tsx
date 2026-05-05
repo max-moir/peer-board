@@ -165,18 +165,6 @@ export default function Chat() {
             placeholder="nickname"
             className="px-2 py-1 text-xs rounded-md border border-[var(--color-border-primary)] bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)]"
           />
-
-          <select
-            value={activeTopic}
-            onChange={(e) => setActiveTopic(e.target.value)}
-            className="px-2 py-1 text-xs rounded-md border border-[var(--color-border-primary)] bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)]"
-          >
-            {topics.map((t) => (
-              <option key={t} value={t}>
-                #{t}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Topics display */}
@@ -239,6 +227,18 @@ export default function Chat() {
           >
             Send
           </button>
+
+          <select
+            value={activeTopic}
+            onChange={(e) => setActiveTopic(e.target.value)}
+            className="px-2 py-1 text-xs rounded-md border border-[var(--color-border-primary)] bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)]"
+          >
+            {topics.map((t) => (
+              <option key={t} value={t}>
+                #{t}
+              </option>
+            ))}
+          </select>
         </div>
       </main>
     </div>
