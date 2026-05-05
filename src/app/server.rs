@@ -87,12 +87,19 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
 
             Ok(msg) = rx.recv() => {
                 match msg {
+
                     WsOutgoing::message { .. } => {
                         if let Ok(json) = serde_json::to_string(&msg) {
                             let _ = socket.send(Message::Text(json)).await;
                         }
                     },
                     WsOutgoing::local_id { .. } => {
+                        if let Ok(json) = serde_json::to_string(&msg) {
+                            let _ = socket.send(Message::Text(json)).await;
+                        }
+                    }
+
+                    WsOutgoing::discover_response { .. } => {
                         if let Ok(json) = serde_json::to_string(&msg) {
                             let _ = socket.send(Message::Text(json)).await;
                         }

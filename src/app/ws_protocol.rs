@@ -10,11 +10,13 @@ pub enum WsIncoming {
     unsubscribe_topic { topic: String },
     local_id_req {},
 
+    discover {},
     register_for_game { nickname: String },
     unregister_for_game {},
 
-    send_challenge { peer_id: String, nickname: String },
+    send_challenge { peer_id: String },
     respond_challenge { peer_id: String, accepted: bool },
+
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -36,5 +38,8 @@ pub enum WsOutgoing {
     },
     error {
         message: String,
+    },
+    discover_response {
+        peers: Vec<String>
     }
 }

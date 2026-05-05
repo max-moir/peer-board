@@ -20,6 +20,9 @@ export type WsIncoming =
       type: "local_id_req";
     }
   | {
+      type: "discover";
+    }
+  | {
       type: "register_for_game";
       nickname: string;
     }
@@ -29,7 +32,6 @@ export type WsIncoming =
   | {
       type: "send_challenge";
       peer_id: string;
-      nickname: string;
     }
   | {
       type: "respond_challenge";
@@ -59,8 +61,8 @@ export type WsOutgoing =
       message: string;
     }
   | {
-      type: "peers_seeking";
-      peers: { peer_id: string; nickname: string }[];
+      type: "discover_response";
+      peers: String[];
     }
   | {
       type: "challenge_propose";
@@ -136,6 +138,11 @@ export class WebSocketClient {
 
   // --- Rendezvous / Battleship API ---
 
+  discover() {
+    console.log("discover");
+    this.send({ type: "discover" });
+  }
+
   registerForGame(nickname: string) {
     console.log("register");
     this.send({ type: "register_for_game", nickname });
@@ -146,8 +153,8 @@ export class WebSocketClient {
     console.log("uregister");
   }
 
-  sendChallenge(peer_id: string, nickname: string) {
-    this.send({ type: "send_challenge", peer_id, nickname });
+  sendChallenge(peer_id: string) {
+    this.send({ type: "send_challenge", peer_id: peer_id });
   }
 
   respondChallenge(peer_id: string, accepted: boolean) {

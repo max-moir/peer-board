@@ -2,6 +2,7 @@ use tokio::sync::mpsc;
 use futures_util::StreamExt;
 use libp2p::{gossipsub, swarm::SwarmEvent, rendezvous, Multiaddr};
 use serde_json::json;
+use std::time::Duration;
 
 use crate::{
     core::{
@@ -50,6 +51,7 @@ pub async fn run_swarm(
 
 
     swarm.dial(bootstrap_addr.clone()).unwrap();
+
 
     loop {
         tokio::select! {
@@ -114,11 +116,10 @@ pub async fn run_swarm(
 
                         let ns = Namespace::new("peerboard/challenge/seeking".to_string()).unwrap();
 
-                        match swarm.behaviour_mut().rendezvous.register(ns, bootstrap_peer_id, None) {
-                            Ok(_) => {println!("Worked");}
-                            Err(e) => {println!("{}", e);}
-                        }
+                        let _ = swarm.behaviour_mut().rendezvous.register(ns, bootstrap_peer_id, None);
+                    },
 
+                    WsIncoming::discover{} => {
                         let _ = swarm.behaviour_mut()
                             .rendezvous
                             .discover(
@@ -127,7 +128,10 @@ pub async fn run_swarm(
                                 Some(10),
                                 bootstrap_peer_id,
                             );
-                    },
+
+                        println!("discovering");
+
+                    }
 
                     WsIncoming::unregister_for_game{ }  => {
                         println!("Not seeking");
@@ -139,10 +143,17 @@ pub async fn run_swarm(
                         );
                     },
 
+                    WsIncoming::send_challenge{ peer_id } => {
+                        println!("{}", peer_id);
+
+
+                    },
+
                     _ => {}
                 }
 
             }
+
 
             // Process events from the swarm
             event = swarm.select_next_some() => match event {
@@ -181,6 +192,7 @@ pub async fn run_swarm(
                 }
 
 
+
                 SwarmEvent::Behaviour(ChatBehaviourEvent::Rendezvous(event)) => {
                     use libp2p::rendezvous::client::Event;
 
@@ -190,10 +202,18 @@ pub async fn run_swarm(
                         },
                         Event::Discovered { rendezvous_node, registrations, cookie } => {
                             println!("Discovered {} registrations from rendezvous node {}", registrations.len(), rendezvous_node);
-                            for reg in registrations {
-                                let peer_id = &reg.record.peer_id();
-                                println!(" - Peer ID: {}", peer_id);
-                            }
+
+                            let peer_ids: Vec<String> = registrations
+                                .iter()
+                                .map(|reg| reg.record.peer_id().to_string())
+                                .collect();
+
+
+                            let outgoing = WsOutgoing::discover_response {
+                                peers: peer_ids, 
+                            };
+
+                            let _ = tx_to_client.send(outgoing);
                         },
                         _ => {}
                     }
