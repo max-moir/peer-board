@@ -83,8 +83,6 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                         eprintln!("WS parse error: {:?}", e);
                         continue;
                     }
-
-                    
                 }
             }
 

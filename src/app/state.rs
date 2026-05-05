@@ -10,7 +10,7 @@ pub type ToClientTx = broadcast::Sender<WsOutgoing>;
 pub struct AppState {
     pub tx_to_swarm: ToSwarmTx,
     pub tx_to_client: ToClientTx,
-    pub db: Arc<MessageStore>
+    pub db: Arc<MessageStore>,
 }
 
 pub type SharedState = Arc<AppState>;

@@ -23,7 +23,7 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let state = Arc::new(state::AppState {
         tx_to_swarm,
         tx_to_client: tx_to_client.clone(),
-        db: db.clone()
+        db: db.clone(),
     });
 
 

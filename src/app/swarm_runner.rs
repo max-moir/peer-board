@@ -14,6 +14,8 @@ use crate::{
 
 
 const CHAT_TOPIC: &str = "peerboard/v1/general";
+const HANDSHAKE_PATH: &str = "peerboard/challenge/1.0.0";
+const BATTLESHIP_PATH: &str = "peerboard/challenge/1.0.0";
 
 pub async fn run_swarm(
     mut rx: mpsc::Receiver<WsIncoming>,
@@ -101,7 +103,16 @@ pub async fn run_swarm(
 
                         let _ = tx_to_client.send(outgoing);
 
-                    }
+                    },
+                    WsIncoming::register_for_game{ nickname }  => {
+                        println!("Seeking")
+                    },
+
+                    WsIncoming::unregister_for_game{ }  => {
+                        println!("Not Seeking")
+                    },
+
+                    _ => {}
                 }
 
             }

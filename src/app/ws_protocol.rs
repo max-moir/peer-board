@@ -8,6 +8,13 @@ pub enum WsIncoming {
     send_message { topic: String, nickname: String, content: String },
     subscribe_topic { topic: String },
     unsubscribe_topic { topic: String },
+    local_id_req {},
+
+    register_for_game { nickname: String },
+    unregister_for_game {},
+
+    send_challenge { peer_id: String, nickname: String },
+    respond_challenge { peer_id: String, accepted: bool },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
