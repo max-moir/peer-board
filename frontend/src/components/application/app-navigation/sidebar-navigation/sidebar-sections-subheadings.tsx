@@ -89,7 +89,7 @@ export const SidebarNavigationSectionsSubheadings = ({
         ))}
 
         {/* 🔹 Channels Section */}
-        <li>
+        {/* <li>
           <div className="flex items-center justify-between px-5 pb-1">
             <p className="text-xs font-bold text-quaternary uppercase">
               Channels
@@ -128,7 +128,7 @@ export const SidebarNavigationSectionsSubheadings = ({
               );
             })}
           </ul>
-        </li>
+        </li> */}
       </ul>
 
       {/* Footer */}
