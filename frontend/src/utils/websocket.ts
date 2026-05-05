@@ -1,19 +1,54 @@
+export type WsIncoming =
+  | {
+      type: "send_message";
+      topic: string;
+      sender: string;
+      content: string;
+    }
+  | {
+      type: "subscribe_topic";
+      topic: string;
+    }
+  | {
+      type: "unsubscribe_topic";
+      topic: string;
+    }
+  | {
+      type: "topic_history";
+      topic: string;
+    };
+
+export type WsOutgoing =
+  | {
+      type: "message";
+      topic: string;
+      sender: string;
+      content: string;
+      timestamp: number;
+    }
+  | {
+      type: "history";
+      topic: string;
+      messages: WsMessage[];
+    }
+  | {
+      type: "error";
+      message: string;
+    };
+
+export type WsMessage = {
+  topic: string;
+  sender: string;
+  content: string;
+  timestamp: number;
+};
+
 export interface WebSocketMessageHandler {
-  onMessage: (message: string) => void;
+  onMessage: (message: WsOutgoing) => void;
   onOpen: () => void;
   onClose: () => void;
   onError: () => void;
 }
-
-export type WSOutgoingMessage =
-  | {
-      type: "message";
-      topic: string;
-      payload: string;
-    }
-  | {
-      type: "ping";
-    };
 
 export class WebSocketClient {
   private ws: WebSocket | null = null;
@@ -27,26 +62,59 @@ export class WebSocketClient {
   private connect(url: string) {
     this.ws = new WebSocket(url);
 
-    this.ws.onopen = () => this.handler.onOpen();
-
-    this.ws.onmessage = (event) => {
-      this.handler.onMessage(event.data);
+    this.ws.onopen = () => {
+      this.handler.onOpen();
     };
 
-    this.ws.onclose = () => this.handler.onClose();
+    this.ws.onmessage = (event) => {
+      try {
+        const data: WsOutgoing = JSON.parse(event.data);
+        this.handler.onMessage(data);
+      } catch (err) {
+        console.error("Invalid WS message:", event.data);
+      }
+    };
 
-    this.ws.onerror = () => this.handler.onError();
+    this.ws.onclose = () => {
+      this.handler.onClose();
+    };
+
+    this.ws.onerror = () => {
+      this.handler.onError();
+    };
   }
 
-  sendMessage(message: string) {
+  sendMessage(topic: string, sender: string, content: string) {
     this.send({
-      type: "message",
-      topic: "general",
-      payload: message,
+      type: "send_message",
+      topic,
+      sender,
+      content,
     });
   }
 
-  send(data: WSOutgoingMessage) {
+  subscribe(topic: string) {
+    this.send({
+      type: "subscribe_topic",
+      topic,
+    });
+  }
+
+  unsubscribe(topic: string) {
+    this.send({
+      type: "unsubscribe_topic",
+      topic,
+    });
+  }
+
+  requestHistory(topic: string) {
+    this.send({
+      type: "topic_history",
+      topic,
+    });
+  }
+
+  private send(data: WsIncoming) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     }

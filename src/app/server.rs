@@ -47,6 +47,7 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                 // Incoming websocket events
                 match parsed {
                     Ok(WsIncoming::topic_history { topic }) => {
+                        println!("History request");
                         // Get message history by topic from database
                     },
 
@@ -55,12 +56,16 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                         let _ = state.tx_to_swarm.send(incoming_command).await;
                     },
 
-                    Err(_) => todo!()
+                    Err(e) => {
+                        eprintln!("WS parse error: {:?}", e);
+                        continue;
+                    }
+
+                    
                 }
             }
 
             Ok(msg) = rx.recv() => {
-
                 match msg {
                     WsOutgoing::message { .. } => {
                         println!("MESSAGE");
@@ -69,7 +74,6 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                             let _ = socket.send(Message::Text(json)).await;
                         }
                     }
-
                     _ => {}
                 }
             }

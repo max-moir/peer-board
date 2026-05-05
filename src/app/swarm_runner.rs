@@ -53,16 +53,18 @@ pub async fn run_swarm(
 
                     WsIncoming::send_message { topic, sender, content } => {
 
+                        let full_topic = format!("peerboard/v1/{}", topic);
+
                         let data = encode_message(
                             &local_peer.to_string(),
-                            &topic,
+                            &full_topic,
                             content.clone(),
                             sender.clone(),
                         )?;
 
                         let db_msg = DbMessage {
                             message_id: format!("local-{}", current_timestamp()),
-                            topic: topic.clone(),
+                            topic: full_topic.clone(),
                             sender,
                             content,
                             timestamp: current_timestamp(),
@@ -70,7 +72,7 @@ pub async fn run_swarm(
 
                         let _ = db.insert_message(&db_msg);
 
-                        let gossip_topic = gossipsub::IdentTopic::new(&topic);
+                        let gossip_topic = gossipsub::IdentTopic::new(&full_topic);
 
                         let _ = swarm.behaviour_mut()
                             .gossipsub
