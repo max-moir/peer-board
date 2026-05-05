@@ -6,6 +6,7 @@ use prost::Message;
 use uuid::Uuid;
 
 use crate::core::proto::peerboard::v1::PeerBoardMessage;
+const PREFIX : &str = "peerboard/v1/";
 
 #[derive(Clone, Default)]
 pub struct MessageDedup {
@@ -63,7 +64,7 @@ pub fn decode_and_validate_message(
     dedup: &MessageDedup,
 ) -> Option<PeerBoardMessage> {
 
-    let msg = match PeerBoardMessage::decode(bytes) {
+    let mut msg = match PeerBoardMessage::decode(bytes) {
         Ok(m) => m,
         Err(_) => return None, // silent drop
     };
@@ -72,13 +73,15 @@ pub fn decode_and_validate_message(
         return None;
     }
 
-    if !msg.topic.starts_with("peerboard/v1/") {
+    if !msg.topic.starts_with(PREFIX) {
         return None;
     }
 
     if msg.content.as_bytes().len() > 4096 {
         return None;
     }
+
+    msg.topic = msg.topic.strip_prefix(PREFIX).unwrap_or(&msg.topic).to_string();
 
     if msg.nickname.as_bytes().len() > 32 {
         return None;

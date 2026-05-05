@@ -2,7 +2,7 @@ export type WsIncoming =
   | {
       type: "send_message";
       topic: string;
-      sender: string;
+      nickname: string;
       content: string;
     }
   | {
@@ -83,11 +83,11 @@ export class WebSocketClient {
     };
   }
 
-  sendMessage(topic: string, sender: string, content: string) {
+  sendMessage(topic: string, nickname: string, content: string) {
     this.send({
       type: "send_message",
       topic,
-      sender,
+      nickname,
       content,
     });
   }

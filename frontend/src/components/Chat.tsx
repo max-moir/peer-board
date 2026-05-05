@@ -3,17 +3,19 @@ import { WebSocketClient } from "@/utils/websocket";
 import { SidebarNavigationSectionsSubheadingsDemo } from "./Sidebar";
 
 type ChatMessage = {
-  sender: string;
+  peer_id: string;
+  nickname: string;
   content: string;
   timestamp: number;
   topic: string;
+  message_id: string;
 };
 
 export default function Chat() {
   const [input, setInput] = useState("");
 
-  // NEW: editable identity + topic
-  const [username, setUsername] = useState("ma");
+  // Editable identity + topic
+  const [nickname, setNickname] = useState("ma");
   const [activeTopic, setActiveTopic] = useState("general");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -58,33 +60,31 @@ export default function Chat() {
     if (msg.type === "history_response") {
       setMessages(
         msg.messages.map((m: any) => ({
-          sender: m.sender,
+          peer_id: m.peer_id,
+          nickname: m.nickname,
           content: m.content,
           timestamp: m.timestamp,
-          topic: msg.topic,
+          topic: m.topic, // now topic suffix
+          message_id: m.message_id,
         })),
       );
     }
 
     if (msg.type === "message") {
       setMessages((prev) => {
-        const exists = prev.some(
-          (m) =>
-            m.content === msg.content &&
-            m.timestamp === msg.timestamp &&
-            m.sender === msg.sender &&
-            m.topic === msg.topic,
-        );
+        const exists = prev.some((m) => m.message_id === msg.message_id);
 
         if (exists) return prev;
 
         return [
           ...prev,
           {
-            sender: msg.sender,
+            peer_id: msg.peer_id,
+            nickname: msg.nickname,
             content: msg.content,
             timestamp: msg.timestamp,
             topic: msg.topic,
+            message_id: msg.message_id,
           },
         ];
       });
@@ -94,30 +94,29 @@ export default function Chat() {
   const sendMessage = () => {
     if (!input.trim() || !wsClientRef.current) return;
 
+    const localMessageId = `local-${Date.now()}`;
+
     const optimistic: ChatMessage = {
-      sender: username,
+      peer_id: "local", // temporary until server echoes peer_id
+      nickname,
       content: input.trim(),
       timestamp: Math.floor(Date.now() / 1000),
       topic: activeTopic,
+      message_id: localMessageId,
     };
 
     setMessages((prev) => [...prev, optimistic]);
 
-    wsClientRef.current.sendMessage(activeTopic, username, input.trim());
+    wsClientRef.current.sendMessage(activeTopic, nickname, input.trim());
     setInput("");
   };
 
-  const MessageItem = ({
-    msg,
-    isSelf,
-  }: {
-    msg: ChatMessage;
-    isSelf: boolean;
-  }) => {
+  const MessageItem = ({ msg }: { msg: ChatMessage }) => {
+    const isSelf = msg.nickname === nickname;
     return (
       <div className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
         <div className="text-xs text-[var(--color-text-tertiary)] mb-1">
-          #{msg.topic} • {msg.sender} •{" "}
+          #{msg.topic} • {msg.nickname} •{" "}
           {new Date(msg.timestamp * 1000).toLocaleTimeString()}
         </div>
 
@@ -152,12 +151,12 @@ export default function Chat() {
           </p>
         </div>
 
-        {/* Controls: username + topic */}
+        {/* Controls: nickname + topic */}
         <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
           <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="username"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="nickname"
             className="px-2 py-1 text-xs rounded-md border border-[var(--color-border-primary)] bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)]"
           />
 
@@ -197,12 +196,8 @@ export default function Chat() {
               No messages yet.
             </div>
           ) : (
-            messages.map((msg, idx) => (
-              <MessageItem
-                key={idx}
-                msg={msg}
-                isSelf={msg.sender === username}
-              />
+            messages.map((msg) => (
+              <MessageItem key={msg.message_id} msg={msg} />
             ))
           )}
           <div ref={bottomRef} />

@@ -51,20 +51,21 @@ pub async fn run_swarm(
             Some(msg) = rx.recv() => {
                 match msg {
 
-                    WsIncoming::send_message { topic, sender, content } => {
+                    WsIncoming::send_message { topic, nickname, content } => {
                         let full_topic = format!("peerboard/v1/{}", topic);
 
                         let data = encode_message(
                             &local_peer.to_string(),
                             &full_topic,
                             content.clone(),
-                            sender.clone(),
+                            nickname.clone(),
                         )?;
 
                         let db_msg = DbMessage {
+                            peer_id: local_peer.to_string(),
                             message_id: format!("local-{}", current_timestamp()),
-                            topic: full_topic.clone(),
-                            sender,
+                            topic: topic.clone(),
+                            nickname,
                             content,
                             timestamp: current_timestamp(),
                         };
@@ -112,23 +113,24 @@ pub async fn run_swarm(
                     // Decode and validate the message, then send it to the WebSocket clients
                     if let Some(msg) = decode_and_validate_message(&message.data, &dedup) {
 
-                        // Send message to front end
                         let outgoing = WsOutgoing::message {
+                            peer_id: msg.peer_id.clone(),
                             topic: msg.topic.clone(),
-                            sender: msg.nickname.clone(),
                             content: msg.content.clone(),
-                            timestamp: current_timestamp(),
+                            timestamp: current_timestamp() as i64,
+                            message_id: msg.message_id.clone(),
+                            nickname: msg.nickname.clone(),
                         };
 
                         let _ = tx_to_client.send(outgoing);
 
-                        // Build DB message
                         let db_msg = DbMessage {
-                            message_id: msg.message_id.to_string(), 
+                            peer_id: msg.peer_id.clone(),
                             topic: msg.topic.clone(),
-                            sender: msg.nickname.clone(),
                             content: msg.content.clone(),
-                            timestamp: current_timestamp(),
+                            timestamp: current_timestamp() as i64,
+                            message_id: msg.message_id.clone(),
+                            nickname: msg.nickname.clone(),
                         };
 
                         let _ = db.insert_message(&db_msg);
