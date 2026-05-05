@@ -111,14 +111,22 @@ pub async fn run_swarm(
 
                     },
                     WsIncoming::register_for_game{ nickname }  => {
-                        println!("Seeking");
                         let _ = swarm.behaviour_mut()
-                        .rendezvous
-                        .register(
-                            rendezvous::Namespace::from_static(CHALLENGE_NS),
-                            bootstrap_peer_id,
-                            None,
-                        );
+                            .rendezvous
+                            .register(
+                                rendezvous::Namespace::from_static("peerboard/challenge/seeking"),
+                                bootstrap_peer_id,
+                                None,
+                            );
+                        println!("Seeking");
+                            let _ = swarm.behaviour_mut()
+                                .rendezvous
+                                .discover(
+                                    Some(rendezvous::Namespace::from_static("peerboard/challenge/seeking")),
+                                    None,
+                                    Some(10),
+                                    bootstrap_peer_id,
+                                );
                     },
 
                     WsIncoming::unregister_for_game{ }  => {
@@ -126,7 +134,7 @@ pub async fn run_swarm(
                         let _ = swarm.behaviour_mut()
                             .rendezvous
                             .unregister(
-                                rendezvous::Namespace::from_static(CHALLENGE_NS),
+                                rendezvous::Namespace::from_static("peerboard/challenge/seeking"),
                                 bootstrap_peer_id,
                         );
                     },
@@ -172,30 +180,32 @@ pub async fn run_swarm(
                     }
                 }
 
-                SwarmEvent::Behaviour(ChatBehaviourEvent::Rendezvous(evt)) => {
-                    match evt {
-                        libp2p::rendezvous::client::Event::Discovered {
-                            registrations,
-                            cookie,
-                            rendezvous_node,
-                        } => {
-                            println!("Discovered {} peers from rendezvous node {:?}", registrations.len(), rendezvous_node);
 
-                            // if let Some(peer) = registrations.first() {
-                            //     println!("Selected peer: {} with addresses {:?}", peer.peer_id, peer.record.addresses);
-                            // }
+                SwarmEvent::Behaviour(ChatBehaviourEvent::Rendezvous(event)) => {
+                    use libp2p::rendezvous::client::Event;
 
-                        }
-                        libp2p::rendezvous::client::Event::Registered { namespace, ttl, rendezvous_node } => {
-                            println!("Successfully registered in namespace '{}' at {} for {} seconds", namespace, rendezvous_node, ttl);
-                        }
-                        libp2p::rendezvous::client::Event::RegisterFailed { namespace, rendezvous_node, error } => {
-                            eprintln!("Failed to register at {}: {:?}", rendezvous_node, error);
-                        }
-                        _ => {}
+                    match event {
+                        Event::Registered { namespace, ttl, .. } => {
+                            println!("✅ Registered on namespace {:?} for {} seconds", namespace, ttl);
+                        },
+                        Event::Discovered { rendezvous_node, registrations, cookie } => {
+                            println!("🔎 Discovered {} registrations from rendezvous node {}", registrations.len(), rendezvous_node);
+                            for reg in registrations {
+                                println!(" - Peer: {:?}", reg.record);
+                            }
+                        },
+                        Event::RegisterFailed { namespace, error, rendezvous_node } => {
+                            eprintln!("❌ Failed to register on namespace {:?}: {:?}", namespace, error);
+                        },
+                        Event::DiscoverFailed { namespace, error, ..} => {
+                            eprintln!("❌ Discovery failed on namespace {:?}: {:?}", namespace, error);
+                        },
+                        Event::Expired { .. } => todo!(),
                     }
-    }
-                _ => {}
+                },
+        _ => {}
+
+
             }
         }
     }
