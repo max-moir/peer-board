@@ -3,18 +3,16 @@ import { WebSocketClient } from "@/utils/websocket";
 import { SidebarNavigationSectionsSubheadingsDemo } from "./Sidebar";
 
 export default function BattleshipPage() {
-  const [nickname, setNickname] = useState("ma");
+  const [nickname, setNickname] = useState("Name");
   const [localId, setLocalId] = useState<string>();
   const [connected, setConnected] = useState(false);
 
-  // Matchmaking state
   const [peersSeeking, setPeersSeeking] = useState<string[]>([]);
-  const [advertising, setAdvertising] = useState(false); // registered in rendezvous
-  const [inGame, setInGame] = useState(false); // active game
+  const [advertising, setAdvertising] = useState(false);
+  const [inGame, setInGame] = useState(false);
 
   const wsClientRef = useRef<WebSocketClient | null>(null);
 
-  // Connect websocket
   useEffect(() => {
     const wsClient = new WebSocketClient("ws://127.0.0.1:3001/ws", {
       onOpen: () => initWs(),
@@ -33,7 +31,6 @@ export default function BattleshipPage() {
     wsClientRef.current?.requestLocalId();
   };
 
-  // Handle messages from the server
   const handleServerMessage = (msg: any) => {
     console.log(msg);
 
@@ -74,7 +71,6 @@ export default function BattleshipPage() {
     }
   };
 
-  // Register/unregister from matchmaking (rendezvous)
   const toggleAdvertising = () => {
     if (!connected) return;
     if (!wsClientRef.current) return;
@@ -93,7 +89,6 @@ export default function BattleshipPage() {
     wsClientRef.current.discover();
   };
 
-  // Challenge a peer
   const challengePeer = (peer) => {
     if (!wsClientRef.current || inGame) return;
     wsClientRef.current.sendChallenge(peer);
@@ -104,17 +99,15 @@ export default function BattleshipPage() {
       <SidebarNavigationSectionsSubheadingsDemo />
 
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
-        {/* Header */}
         <div className="px-5 py-3 border-b border-[var(--color-border-secondary)] shrink-0">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
-            Battleship Matchmaking
+            Battleship Matchmaking (Not working &#x1F613;)
           </h2>
           <p className="text-sm text-[var(--color-text-tertiary)]">
             {connected ? `Connected as ${localId}` : "Disconnected"}
           </p>
         </div>
 
-        {/* Nickname + advertising */}
         <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
           <p className="text-sm text-[var(--color-text-tertiary)]">Nickname:</p>
           <input
@@ -140,12 +133,10 @@ export default function BattleshipPage() {
           </button>
         </div>
 
-        {/* Peers seeking */}
         <div className="px-5 py-2 flex flex-wrap gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
+          <p className="text-[var(--color-text-tertiary)]">Discovered:</p>
           {peersSeeking.filter((p) => p !== localId).length === 0 ? (
-            <p className="text-[var(--color-text-tertiary)]">
-              No peers seeking a match
-            </p>
+            <p className="text-[var(--color-text-tertiary)]">None</p>
           ) : (
             peersSeeking
               .filter((p) => p !== localId)

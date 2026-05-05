@@ -136,8 +136,6 @@ export class WebSocketClient {
     this.send({ type: "history" });
   }
 
-  // --- Rendezvous / Battleship API ---
-
   discover() {
     console.log("discover");
     this.send({ type: "discover" });

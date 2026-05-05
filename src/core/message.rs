@@ -35,7 +35,6 @@ impl MessageDedup {
     }
 }
 
-/// Encode a generic PeerBoardMessage (chat or game)
 pub fn encode_message(
     peer_id: &str,
     topic: &str,
@@ -66,7 +65,6 @@ pub fn encode_message(
     Ok(buf)
 }
 
-/// Decode and validate a PeerBoardMessage (chat or game)
 pub fn decode_and_validate_message(
     bytes: &[u8],
     dedup: &MessageDedup,
@@ -100,11 +98,6 @@ pub fn decode_and_validate_message(
     Some(msg)
 }
 
-/// ---------------------------------------------
-/// Battleship helper functions
-/// ---------------------------------------------
-
-/// Encode a BattleshipRequest into a PeerBoardMessage
 pub fn encode_battleship_request(
     peer_id: &str,
     topic: &str,
@@ -116,7 +109,6 @@ pub fn encode_battleship_request(
     encode_message(peer_id, topic, base64::encode(buf), nickname)
 }
 
-/// Decode a BattleshipRequest from a PeerBoardMessage
 pub fn decode_battleship_request(
     msg: &PeerBoardMessage,
 ) -> Option<BattleshipRequest> {
@@ -124,7 +116,6 @@ pub fn decode_battleship_request(
     BattleshipRequest::decode(&*data).ok()
 }
 
-/// Encode a BattleshipResponse into a PeerBoardMessage
 pub fn encode_battleship_response(
     peer_id: &str,
     topic: &str,
@@ -136,7 +127,6 @@ pub fn encode_battleship_response(
     encode_message(peer_id, topic, base64::encode(buf), nickname)
 }
 
-/// Decode a BattleshipResponse from a PeerBoardMessage
 pub fn decode_battleship_response(
     msg: &PeerBoardMessage,
 ) -> Option<BattleshipResponse> {

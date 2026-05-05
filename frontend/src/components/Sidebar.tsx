@@ -1,13 +1,4 @@
-import {
-  BarChartSquare02,
-  Calendar,
-  CheckDone01,
-  ChevronRight,
-  File05,
-  PieChart03,
-  Rows01,
-  Users01,
-} from "@untitledui/icons";
+import { BarChartSquare02, File05 } from "@untitledui/icons";
 import type { NavItemType } from "@/components/application/app-navigation/config";
 import { SidebarNavigationSectionsSubheadings } from "@/components/application/app-navigation/sidebar-navigation/sidebar-sections-subheadings";
 

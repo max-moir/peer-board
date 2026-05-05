@@ -164,7 +164,6 @@ pub async fn run_swarm(
                         ..
                     }
                 )) => {
-                    // Decode and validate the message, then send it to the WebSocket clients
                     if let Some(msg) = decode_and_validate_message(&message.data, &dedup) {
 
                         let outgoing = WsOutgoing::message {
