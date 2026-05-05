@@ -25,7 +25,7 @@ const navItemsWithSectionsSubheadings: Array<{
       },
       {
         label: "About",
-        href: "/documents",
+        href: "/challenge",
         icon: File05,
       },
     ],
