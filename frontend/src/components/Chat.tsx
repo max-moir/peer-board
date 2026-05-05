@@ -8,50 +8,22 @@ type ChatMessage = {
   timestamp: number;
 };
 
-const MessageItem = ({
-  msg,
-  isSelf,
-}: {
-  msg: ChatMessage;
-  isSelf: boolean;
-}) => {
-  return (
-    <div className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
-      <div className="text-xs text-[var(--color-text-tertiary)] mb-1">
-        {msg.sender} • {new Date(msg.timestamp * 1000).toLocaleTimeString()}
-      </div>
-
-      <div
-        className={`
-          px-3 py-2 rounded-lg max-w-[70%]
-          ${
-            isSelf
-              ? "bg-[var(--color-fg-brand-primary)] text-[var(--color-text-primary_on-brand)]"
-              : "bg-[var(--color-border-secondary)] text-[var(--color-text-primary)]"
-          }
-        `}
-      >
-        {msg.content}
-      </div>
-    </div>
-  );
-};
-
 export default function Chat() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
+
   const wsClientRef = useRef<WebSocketClient | null>(null);
-  const bottomRef = useRef(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const wsClient = new WebSocketClient("ws://127.0.0.1:3001/ws", {
       onOpen: () => handleStartup(),
-      // onMessage: (msg) => setMessages((prev) => [...prev, msg.content]),
       onMessage: (msg) => handleResponse(msg),
       onClose: () => setConnected(false),
       onError: () => setConnected(false),
     });
+
     wsClientRef.current = wsClient;
 
     return () => {
@@ -65,11 +37,21 @@ export default function Chat() {
 
   const handleStartup = () => {
     setConnected(true);
-    wsClientRef.current.requestHistory("general");
+    wsClientRef.current?.requestHistory("general");
   };
 
-  const handleResponse = (msg) => {
+  const handleResponse = (msg: any) => {
     console.log(msg);
+
+    if (msg.type === "history_response") {
+      setMessages(
+        msg.messages.map((m: any) => ({
+          sender: m.sender,
+          content: m.content,
+          timestamp: m.timestamp,
+        })),
+      );
+    }
 
     if (msg.type === "message") {
       setMessages((prev) => {
@@ -92,30 +74,59 @@ export default function Chat() {
         ];
       });
     }
-
-    if (msg.type === "history_response") {
-      setMessages(
-        msg.messages.map((m) => ({
-          sender: m.sender,
-          content: m.content,
-          timestamp: m.timestamp,
-        })),
-      );
-    }
   };
 
   const sendMessage = () => {
     if (input.trim() && wsClientRef.current) {
+      const optimistic = {
+        sender: "ma",
+        content: input.trim(),
+        timestamp: Math.floor(Date.now() / 1000),
+      };
+
+      // Optimistic UI update
+      setMessages((prev) => [...prev, optimistic]);
+
       wsClientRef.current.sendMessage("general", "ma", input.trim());
       setInput("");
     }
   };
 
+  const MessageItem = ({
+    msg,
+    isSelf,
+  }: {
+    msg: ChatMessage;
+    isSelf: boolean;
+  }) => {
+    return (
+      <div className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
+        <div className="text-xs text-[var(--color-text-tertiary)] mb-1">
+          {msg.sender} • {new Date(msg.timestamp * 1000).toLocaleTimeString()}
+        </div>
+
+        <div
+          className={`
+            px-3 py-2 rounded-lg max-w-[70%]
+            ${
+              isSelf
+                ? "bg-[var(--color-fg-brand-primary)] text-[var(--color-text-primary_on-brand)]"
+                : "bg-[var(--color-border-secondary)] text-[var(--color-text-primary)]"
+            }
+          `}
+        >
+          {msg.content}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="flex h-screen bg-background-dark">
+    <div className="flex h-screen overflow-hidden bg-[var(--color-bg-primary)]">
       <SidebarNavigationSectionsSubheadingsDemo />
 
-      <main className="flex-1 flex flex-col overflow-hidden bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]">
+      <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+        {/* Header */}
         <div className="px-5 py-3 border-b border-[var(--color-border-secondary)] shrink-0">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
             # General
@@ -125,6 +136,7 @@ export default function Chat() {
           </p>
         </div>
 
+        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-[var(--color-bg-secondary)] min-h-0">
           {messages.length === 0 ? (
             <div className="text-[var(--color-text-tertiary)]">
@@ -135,8 +147,10 @@ export default function Chat() {
               <MessageItem key={idx} msg={msg} isSelf={msg.sender === "ma"} />
             ))
           )}
+          <div ref={bottomRef} />
         </div>
 
+        {/* Input */}
         <div className="p-4 border-t border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] flex gap-2 shrink-0">
           <input
             value={input}
