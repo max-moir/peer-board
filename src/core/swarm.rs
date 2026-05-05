@@ -51,7 +51,7 @@ pub fn build_swarm(
         rendezvous,
     };
 
-    let mut swarm = libp2p::SwarmBuilder::with_existing_identity(key)
+    let swarm = libp2p::SwarmBuilder::with_existing_identity(key)
         .with_tokio()
         .with_tcp(tcp::Config::default(), noise::Config::new, yamux::Config::default)?
         .with_quic()

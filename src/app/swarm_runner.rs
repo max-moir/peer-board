@@ -1,6 +1,6 @@
 use tokio::sync::mpsc;
 use futures_util::StreamExt;
-use libp2p::{gossipsub, swarm::SwarmEvent};
+use libp2p::{gossipsub, swarm::SwarmEvent, rendezvous};
 use serde_json::json;
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
 
 
 const CHAT_TOPIC: &str = "peerboard/v1/general";
-const HANDSHAKE_PATH: &str = "peerboard/challenge/1.0.0";
+const CHALLENGE_NS: &str = "peerboard/challenge/seeking";
 const BATTLESHIP_PATH: &str = "peerboard/challenge/1.0.0";
 
 pub async fn run_swarm(
@@ -39,7 +39,13 @@ pub async fn run_swarm(
 
     let bootstrap_peer_id = "12D3KooWCvwqT3JUzVQczCvAVFa9EGzNqjHHSMVHVhm3RVyscCNY"
         .parse()?;
-    let bootstrap_addr = "/ip4/170.64.177.57/tcp/8000".parse::<libp2p::Multiaddr>()?;
+    let bootstrap_addr = "/ip4/170.64.177.57/tcp/8000".parse::<libp2p::Multiaddr>()?;                        
+                        
+                        
+                        
+                        
+                        
+                        
     swarm.behaviour_mut()
         .kademlia
         .add_address(&bootstrap_peer_id, bootstrap_addr.clone());
@@ -105,11 +111,24 @@ pub async fn run_swarm(
 
                     },
                     WsIncoming::register_for_game{ nickname }  => {
-                        println!("Seeking")
+                        println!("Seeking");
+                        let _ = swarm.behaviour_mut()
+                        .rendezvous
+                        .register(
+                            rendezvous::Namespace::from_static(CHALLENGE_NS),
+                            bootstrap_peer_id,
+                            None,
+                        );
                     },
 
                     WsIncoming::unregister_for_game{ }  => {
-                        println!("Not Seeking")
+                        println!("Not seeking");
+                        let _ = swarm.behaviour_mut()
+                            .rendezvous
+                            .unregister(
+                                rendezvous::Namespace::from_static(CHALLENGE_NS),
+                                bootstrap_peer_id,
+                        );
                     },
 
                     _ => {}
@@ -152,6 +171,30 @@ pub async fn run_swarm(
                         let _ = db.insert_message(&db_msg);
                     }
                 }
+
+                SwarmEvent::Behaviour(ChatBehaviourEvent::Rendezvous(evt)) => {
+                    match evt {
+                        libp2p::rendezvous::client::Event::Discovered {
+                            registrations,
+                            cookie,
+                            rendezvous_node,
+                        } => {
+                            println!("Discovered {} peers from rendezvous node {:?}", registrations.len(), rendezvous_node);
+
+                            // if let Some(peer) = registrations.first() {
+                            //     println!("Selected peer: {} with addresses {:?}", peer.peer_id, peer.record.addresses);
+                            // }
+
+                        }
+                        libp2p::rendezvous::client::Event::Registered { namespace, ttl, rendezvous_node } => {
+                            println!("Successfully registered in namespace '{}' at {} for {} seconds", namespace, rendezvous_node, ttl);
+                        }
+                        libp2p::rendezvous::client::Event::RegisterFailed { namespace, rendezvous_node, error } => {
+                            eprintln!("Failed to register at {}: {:?}", rendezvous_node, error);
+                        }
+                        _ => {}
+                    }
+    }
                 _ => {}
             }
         }
