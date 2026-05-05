@@ -11,6 +11,11 @@ type ChatMessage = {
 
 export default function Chat() {
   const [input, setInput] = useState("");
+
+  // NEW: editable identity + topic
+  const [username, setUsername] = useState("ma");
+  const [activeTopic, setActiveTopic] = useState("general");
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
 
@@ -87,19 +92,19 @@ export default function Chat() {
   };
 
   const sendMessage = () => {
-    if (input.trim() && wsClientRef.current) {
-      const optimistic: ChatMessage = {
-        sender: "ma",
-        content: input.trim(),
-        timestamp: Math.floor(Date.now() / 1000),
-        topic: "general",
-      };
+    if (!input.trim() || !wsClientRef.current) return;
 
-      setMessages((prev) => [...prev, optimistic]);
+    const optimistic: ChatMessage = {
+      sender: username,
+      content: input.trim(),
+      timestamp: Math.floor(Date.now() / 1000),
+      topic: activeTopic,
+    };
 
-      wsClientRef.current.sendMessage("general", "ma", input.trim());
-      setInput("");
-    }
+    setMessages((prev) => [...prev, optimistic]);
+
+    wsClientRef.current.sendMessage(activeTopic, username, input.trim());
+    setInput("");
   };
 
   const MessageItem = ({
@@ -147,7 +152,29 @@ export default function Chat() {
           </p>
         </div>
 
-        {/* Topics */}
+        {/* Controls: username + topic */}
+        <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="username"
+            className="px-2 py-1 text-xs rounded-md border border-[var(--color-border-primary)] bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)]"
+          />
+
+          <select
+            value={activeTopic}
+            onChange={(e) => setActiveTopic(e.target.value)}
+            className="px-2 py-1 text-xs rounded-md border border-[var(--color-border-primary)] bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)]"
+          >
+            {topics.map((t) => (
+              <option key={t} value={t}>
+                #{t}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Topics display */}
         <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
           {topics.map((t) => (
             <span
@@ -171,7 +198,11 @@ export default function Chat() {
             </div>
           ) : (
             messages.map((msg, idx) => (
-              <MessageItem key={idx} msg={msg} isSelf={msg.sender === "ma"} />
+              <MessageItem
+                key={idx}
+                msg={msg}
+                isSelf={msg.sender === username}
+              />
             ))
           )}
           <div ref={bottomRef} />
@@ -185,7 +216,7 @@ export default function Chat() {
             onKeyDown={(e) => {
               if (e.key === "Enter") sendMessage();
             }}
-            placeholder="Type a message..."
+            placeholder={`Message #${activeTopic}`}
             className="
               flex-1 px-3 py-2 rounded-md
               bg-[var(--color-border-tertiary)]
