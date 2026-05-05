@@ -47,11 +47,8 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                 // Incoming websocket events
                 match parsed {
                     Ok(WsIncoming::history {}) => {
-                        println!("History request");
-
                         match state.db.get_all_messages() {
                             Ok(messages) => {
-                                println!("DB messages: {:?}", messages);
 
                                 let outgoing = WsOutgoing::history_response {
                                     messages,
@@ -94,8 +91,6 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
             Ok(msg) = rx.recv() => {
                 match msg {
                     WsOutgoing::message { .. } => {
-                        println!("MESSAGE");
-
                         if let Ok(json) = serde_json::to_string(&msg) {
                             let _ = socket.send(Message::Text(json)).await;
                         }
