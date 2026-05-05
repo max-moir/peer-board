@@ -157,8 +157,11 @@ export default function Chat() {
           </p>
         </div>
 
-        {/* Controls: nickname + topic */}
+        {/* Controls: nickname  */}
         <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
+          <p className="text-sm text-[var(--color-text-tertiary)]">
+            Choose nickname:
+          </p>
           <input
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
