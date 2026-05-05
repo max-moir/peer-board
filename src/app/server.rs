@@ -49,8 +49,12 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                     Ok(WsIncoming::topic_history { topic }) => {
                         println!("History request");
 
-                        match state.db.get_messages_for_topic(&topic) {
+                        let full_topic = format!("peerboard/v1/{}", topic);
+
+                        match state.db.get_messages_for_topic(&full_topic) {
                             Ok(messages) => {
+                                println!("DB messages: {:?}", messages);
+
                                 let outgoing = WsOutgoing::history_response {
                                     topic,
                                     messages,
