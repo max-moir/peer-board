@@ -24,7 +24,7 @@ const navItemsWithSectionsSubheadings: Array<{
         icon: BarChartSquare02,
       },
       {
-        label: "About",
+        label: "Battleship",
         href: "/challenge",
         icon: File05,
       },

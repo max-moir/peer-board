@@ -44,8 +44,8 @@ pub async fn run_swarm(
         .kademlia
         .add_address(&bootstrap_peer_id, bootstrap_addr.clone());
 
-    swarm.dial(bootstrap_addr)?;
 
+    swarm.dial(bootstrap_addr.clone()).unwrap();
 
     loop {
         tokio::select! {
@@ -96,7 +96,7 @@ pub async fn run_swarm(
                             .unsubscribe(&gossipsub::IdentTopic::new(&full_topic));
                     }
 
-                    WsIncoming::history { .. } => {
+                    WsIncoming::local_id_req { } => {
                         let outgoing = WsOutgoing::local_id {
                             id: local_peer.to_string(),
                         };

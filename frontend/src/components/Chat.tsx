@@ -56,6 +56,7 @@ export default function Chat() {
   };
 
   const handleResponse = (msg: any) => {
+    console.log(msg);
     if (msg.type === "history_response") {
       setMessages(
         msg.messages.map((m: any) => ({

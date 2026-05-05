@@ -6,6 +6,7 @@ use libp2p::{
     gossipsub, identify, kad,
     StreamProtocol,
     swarm::Swarm,
+    rendezvous, Multiaddr
 };
 
 use libp2p::swarm::NetworkBehaviour;
@@ -15,6 +16,7 @@ pub struct ChatBehaviour {
     pub gossipsub: gossipsub::Behaviour,
     pub kademlia: kad::Behaviour<kad::store::MemoryStore>,
     pub identify: identify::Behaviour,
+    pub rendezvous: rendezvous::client::Behaviour
 }
 
 pub fn build_swarm(
@@ -35,6 +37,8 @@ pub fn build_swarm(
         )
     );
 
+    let rendezvous = rendezvous::client::Behaviour::new(key.clone());
+
     let gossipsub = gossipsub::Behaviour::new(
         gossipsub::MessageAuthenticity::Signed(key.clone()),
         gossipsub::Config::default(),
@@ -44,9 +48,10 @@ pub fn build_swarm(
         gossipsub,
         kademlia,
         identify,
+        rendezvous,
     };
 
-    let swarm = libp2p::SwarmBuilder::with_existing_identity(key)
+    let mut swarm = libp2p::SwarmBuilder::with_existing_identity(key)
         .with_tokio()
         .with_tcp(tcp::Config::default(), noise::Config::new, yamux::Config::default)?
         .with_quic()

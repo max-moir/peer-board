@@ -50,6 +50,7 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                         match state.db.get_all_messages() {
                             Ok(messages) => {
 
+                                let _ = state.tx_to_swarm.send(WsIncoming::local_id_req{}).await;
                                 let outgoing = WsOutgoing::history_response {
                                     messages,
                                 };
@@ -57,8 +58,6 @@ async fn handle_socket(mut socket: WebSocket, state: SharedState) {
                                 if let Ok(json) = serde_json::to_string(&outgoing) {
                                     let _ = socket.send(Message::Text(json)).await;
                                 }
-
-                                let _ = state.tx_to_swarm.send(WsIncoming::history {}).await;
                             }
 
                             Err(e) => {
