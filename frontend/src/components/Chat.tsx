@@ -13,16 +13,15 @@ type ChatMessage = {
 
 export default function Chat() {
   const [input, setInput] = useState("");
-
-  // Editable identity + topic
   const [nickname, setNickname] = useState("ma");
-  const [localId, setLocalId] = useState();
+  const [localId, setLocalId] = useState<string>();
   const [activeTopic, setActiveTopic] = useState("general");
-
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
 
-  const [topics] = useState<string[]>(["general", "random"]);
+  // Topics are now fully dynamic
+  const [topics, setTopics] = useState<string[]>(["general", "random"]);
+  const [newTopic, setNewTopic] = useState("");
 
   const wsClientRef = useRef<WebSocketClient | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -50,14 +49,13 @@ export default function Chat() {
     setConnected(true);
     wsClientRef.current?.requestHistory();
 
+    // Subscribe to all current topics
     topics.forEach((t) => {
       wsClientRef.current?.subscribe(t);
     });
   };
 
   const handleResponse = (msg: any) => {
-    console.log(msg);
-
     if (msg.type === "history_response") {
       setMessages(
         msg.messages.map((m: any) => ({
@@ -65,34 +63,21 @@ export default function Chat() {
           nickname: m.nickname,
           content: m.content,
           timestamp: m.timestamp,
-          topic: m.topic, // now topic suffix
+          topic: m.topic,
           message_id: m.message_id,
         })),
       );
     }
 
     if (msg.type === "local_id") {
-      console.log(msg.id);
       setLocalId(msg.id);
     }
 
     if (msg.type === "message") {
       setMessages((prev) => {
         const exists = prev.some((m) => m.message_id === msg.message_id);
-
         if (exists) return prev;
-
-        return [
-          ...prev,
-          {
-            peer_id: msg.peer_id,
-            nickname: msg.nickname,
-            content: msg.content,
-            timestamp: msg.timestamp,
-            topic: msg.topic,
-            message_id: msg.message_id,
-          },
-        ];
+        return [...prev, msg];
       });
     }
   };
@@ -103,7 +88,7 @@ export default function Chat() {
     const localMessageId = `local-${Date.now()}`;
 
     const optimistic: ChatMessage = {
-      peer_id: localId,
+      peer_id: localId!,
       nickname,
       content: input.trim(),
       timestamp: Math.floor(Date.now() / 1000),
@@ -112,9 +97,38 @@ export default function Chat() {
     };
 
     setMessages((prev) => [...prev, optimistic]);
-
     wsClientRef.current.sendMessage(activeTopic, nickname, input.trim());
     setInput("");
+  };
+
+  const addTopic = () => {
+    const topic = newTopic.trim();
+    if (!topic) return;
+
+    const valid = /^[a-z0-9-]+$/.test(topic);
+    if (!valid) {
+      alert("Topic must match [a-z0-9-]+");
+      return;
+    }
+
+    if (!topics.includes(topic)) {
+      setTopics((prev) => [...prev, topic]);
+      wsClientRef.current?.subscribe(topic);
+      setActiveTopic(topic);
+    }
+
+    setNewTopic("");
+  };
+
+  const removeTopic = (topic: string) => {
+    if (topics.length === 1) return; // don't remove the last topic
+    setTopics((prev) => prev.filter((t) => t !== topic));
+
+    wsClientRef.current?.unsubscribe(topic);
+
+    if (activeTopic === topic) {
+      setActiveTopic(topics[0]); // switch to first topic
+    }
   };
 
   const MessageItem = ({ msg }: { msg: ChatMessage }) => {
@@ -157,11 +171,9 @@ export default function Chat() {
           </p>
         </div>
 
-        {/* Controls: nickname  */}
+        {/* Controls: nickname */}
         <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
-          <p className="text-sm text-[var(--color-text-tertiary)]">
-            Choose nickname:
-          </p>
+          <p className="text-sm text-[var(--color-text-tertiary)]">Nickname:</p>
           <input
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
@@ -170,20 +182,35 @@ export default function Chat() {
           />
         </div>
 
-        {/* Topics display */}
-        <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
+        {/* Topics display + add/remove */}
+        <div className="px-5 py-2 flex flex-wrap gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
           {topics.map((t) => (
-            <span
+            <div
               key={t}
-              className="
-                text-xs px-2 py-1 rounded-full
-                bg-[var(--color-border-secondary)]
-                text-[var(--color-text-secondary)]
-              "
+              className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-[var(--color-border-secondary)] text-[var(--color-text-secondary)]"
             >
               #{t}
-            </span>
+              <button
+                onClick={() => removeTopic(t)}
+                className="text-[var(--color-text-tertiary)] hover:text-red-400"
+              >
+                ×
+              </button>
+            </div>
           ))}
+
+          <input
+            value={newTopic}
+            onChange={(e) => setNewTopic(e.target.value)}
+            placeholder="new-topic"
+            className="px-2 py-1 text-xs rounded-md border border-[var(--color-border-primary)] bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)]"
+          />
+          <button
+            onClick={addTopic}
+            className="px-2 py-1 text-xs rounded-md bg-[var(--color-fg-brand-primary)] text-[var(--color-text-primary_on-brand)] hover:bg-[var(--color-fg-brand-secondary_hover)]"
+          >
+            Add
+          </button>
         </div>
 
         {/* Messages */}
@@ -200,7 +227,7 @@ export default function Chat() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
+        {/* Input + topic selector */}
         <div className="p-4 border-t border-[var(--color-border-secondary)] bg-[var(--color-bg-primary)] flex gap-2 shrink-0">
           <input
             value={input}
@@ -209,24 +236,12 @@ export default function Chat() {
               if (e.key === "Enter") sendMessage();
             }}
             placeholder={`Message #${activeTopic}`}
-            className="
-              flex-1 px-3 py-2 rounded-md
-              bg-[var(--color-border-tertiary)]
-              text-[var(--color-text-primary)]
-              placeholder:text-[var(--color-text-placeholder)]
-              border border-[var(--color-border-primary)]
-              focus:outline-none
-            "
+            className="flex-1 px-3 py-2 rounded-md bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] border border-[var(--color-border-primary)] focus:outline-none"
           />
 
           <button
             onClick={sendMessage}
-            className="
-              px-4 py-2 rounded-md
-              bg-[var(--color-fg-brand-primary)]
-              text-[var(--color-text-primary_on-brand)]
-              hover:bg-[var(--color-fg-brand-secondary_hover)]
-            "
+            className="px-4 py-2 rounded-md bg-[var(--color-fg-brand-primary)] text-[var(--color-text-primary_on-brand)] hover:bg-[var(--color-fg-brand-secondary_hover)]"
           >
             Send
           </button>
