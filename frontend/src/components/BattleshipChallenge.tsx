@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { WebSocketClient } from "@/utils/websocket";
 import { SidebarNavigationSectionsSubheadingsDemo } from "./Sidebar";
 
+// Peer as represented in the protocol
 type Peer = {
   peer_id: string;
   nickname: string;
@@ -13,16 +14,17 @@ export default function BattleshipPage() {
   const [connected, setConnected] = useState(false);
 
   // Matchmaking state
-  const [peers, setPeers] = useState<Peer[]>([]);
-  const [available, setAvailable] = useState(false); // Am I advertising myself?
-  const [inGame, setInGame] = useState(false); // Flag for active game
+  const [peersSeeking, setPeersSeeking] = useState<Peer[]>([]);
+  const [advertising, setAdvertising] = useState(false); // registered in rendezvous
+  const [inGame, setInGame] = useState(false); // active game
 
   const wsClientRef = useRef<WebSocketClient | null>(null);
 
+  // Connect websocket
   useEffect(() => {
     const wsClient = new WebSocketClient("ws://127.0.0.1:3001/ws", {
       onOpen: () => setConnected(true),
-      onMessage: handleResponse,
+      onMessage: handleServerMessage,
       onClose: () => setConnected(false),
       onError: () => setConnected(false),
     });
@@ -32,44 +34,61 @@ export default function BattleshipPage() {
     return () => wsClient.close();
   }, []);
 
-  const handleResponse = (msg: any) => {
-    if (msg.type === "local_id") setLocalId(msg.id);
+  // Handle messages from the server
+  const handleServerMessage = (msg: any) => {
+    switch (msg.type) {
+      case "local_id":
+        setLocalId(msg.id);
+        break;
 
-    // Peer discovery response
-    if (msg.type === "peer_list") {
-      setPeers(msg.peers);
-    }
+      case "peers_seeking":
+        setPeersSeeking(msg.peers);
+        break;
 
-    // Game started -> unregister automatically
-    if (msg.type === "game_started") {
-      setInGame(true);
-      setAvailable(false);
-      wsClientRef.current?.unregisterRendezvous(); // stop advertising
-    }
+      case "game_started":
+        setInGame(true);
+        setAdvertising(false);
+        wsClientRef.current?.unregisterRendezvous();
+        break;
 
-    // Game ended -> can advertise again
-    if (msg.type === "game_ended") {
-      setInGame(false);
+      case "game_ended":
+        setInGame(false);
+        break;
+
+      case "challenge_propose":
+        // received a challenge from another peer
+        console.log(`Challenge from ${msg.from_peer_id}`);
+        break;
+
+      case "challenge_response":
+        console.log(
+          `Challenge response from ${msg.from_peer_id}: ${msg.accepted}`,
+        );
+        break;
+
+      default:
+        console.warn("Unhandled message type", msg.type);
     }
   };
 
-  // Register/unregister from rendezvous
-  const toggleAvailability = () => {
+  // Register/unregister from matchmaking (rendezvous)
+  const toggleAdvertising = () => {
+    if (!connected) return;
     if (!wsClientRef.current) return;
 
-    if (!available) {
-      wsClientRef.current.registerRendezvous(nickname);
-      setAvailable(true);
+    if (!advertising) {
+      wsClientRef.current.registerForGame(nickname);
+      setAdvertising(true);
     } else {
       wsClientRef.current.unregisterRendezvous();
-      setAvailable(false);
+      setAdvertising(false);
     }
   };
 
   // Challenge a peer
   const challengePeer = (peer: Peer) => {
     if (!wsClientRef.current || inGame) return;
-    wsClientRef.current.sendChallenge(peer.peer_id);
+    wsClientRef.current.sendChallenge(peer.peer_id, nickname);
   };
 
   return (
@@ -83,11 +102,11 @@ export default function BattleshipPage() {
             Battleship Matchmaking
           </h2>
           <p className="text-sm text-[var(--color-text-tertiary)]">
-            {connected ? `Connected with local id ${localId}` : "Disconnected"}
+            {connected ? `Connected as ${localId}` : "Disconnected"}
           </p>
         </div>
 
-        {/* Nickname + availability */}
+        {/* Nickname + advertising */}
         <div className="px-5 py-2 flex gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
           <p className="text-sm text-[var(--color-text-tertiary)]">Nickname:</p>
           <input
@@ -97,23 +116,23 @@ export default function BattleshipPage() {
             className="px-2 py-1 text-xs rounded-md border border-[var(--color-border-primary)] bg-[var(--color-border-tertiary)] text-[var(--color-text-primary)]"
           />
           <button
-            onClick={toggleAvailability}
+            onClick={toggleAdvertising}
             className={`px-3 py-1 text-xs rounded-md ${
-              available ? "bg-red-500 text-white" : "bg-green-500 text-white"
+              advertising ? "bg-red-500 text-white" : "bg-green-500 text-white"
             }`}
           >
-            {available ? "Stop Seeking" : "Seek Opponent"}
+            {advertising ? "Stop Seeking" : "Seek Opponent"}
           </button>
         </div>
 
-        {/* Peer list */}
+        {/* Peers seeking */}
         <div className="px-5 py-2 flex flex-wrap gap-2 border-b border-[var(--color-border-secondary)] shrink-0">
-          {peers.length === 0 ? (
+          {peersSeeking.length === 0 ? (
             <p className="text-[var(--color-text-tertiary)]">
-              No peers available
+              No peers seeking a match
             </p>
           ) : (
-            peers.map((p) => (
+            peersSeeking.map((p) => (
               <button
                 key={p.peer_id}
                 onClick={() => challengePeer(p)}

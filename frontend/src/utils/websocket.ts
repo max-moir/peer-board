@@ -15,6 +15,26 @@ export type WsIncoming =
     }
   | {
       type: "history";
+    }
+  | {
+      type: "local_id_req";
+    }
+  | {
+      type: "register_for_game";
+      nickname: string;
+    }
+  | {
+      type: "unregister_for_game";
+    }
+  | {
+      type: "send_challenge";
+      peer_id: string;
+      nickname: string;
+    }
+  | {
+      type: "respond_challenge";
+      peer_id: string;
+      accepted: boolean;
     };
 
 export type WsOutgoing =
@@ -37,6 +57,20 @@ export type WsOutgoing =
   | {
       type: "error";
       message: string;
+    }
+  | {
+      type: "peers_seeking";
+      peers: { peer_id: string; nickname: string }[];
+    }
+  | {
+      type: "challenge_propose";
+      from_peer_id: string;
+      nickname: string;
+    }
+  | {
+      type: "challenge_response";
+      from_peer_id: string;
+      accepted: boolean;
     };
 
 export type WsMessage = {
@@ -65,9 +99,7 @@ export class WebSocketClient {
   private connect(url: string) {
     this.ws = new WebSocket(url);
 
-    this.ws.onopen = () => {
-      this.handler.onOpen();
-    };
+    this.ws.onopen = () => this.handler.onOpen();
 
     this.ws.onmessage = (event) => {
       try {
@@ -78,44 +110,51 @@ export class WebSocketClient {
       }
     };
 
-    this.ws.onclose = () => {
-      this.handler.onClose();
-    };
-
-    this.ws.onerror = () => {
-      this.handler.onError();
-    };
+    this.ws.onclose = () => this.handler.onClose();
+    this.ws.onerror = () => this.handler.onError();
   }
 
   sendMessage(topic: string, nickname: string, content: string) {
-    this.send({
-      type: "send_message",
-      topic,
-      nickname,
-      content,
-    });
+    this.send({ type: "send_message", topic, nickname, content });
   }
 
   subscribe(topic: string) {
-    this.send({
-      type: "subscribe_topic",
-      topic,
-    });
+    this.send({ type: "subscribe_topic", topic });
+  }
+
+  requestLocalId() {
+    this.send({ type: "local_id_req" });
   }
 
   unsubscribe(topic: string) {
-    this.send({
-      type: "unsubscribe_topic",
-      topic,
-    });
+    this.send({ type: "unsubscribe_topic", topic });
   }
 
   requestHistory() {
-    this.send({
-      type: "history",
-    });
+    this.send({ type: "history" });
   }
 
+  // --- Rendezvous / Battleship API ---
+
+  registerForGame(nickname: string) {
+    console.log("register");
+    this.send({ type: "register_for_game", nickname });
+  }
+
+  unregisterRendezvous() {
+    this.send({ type: "unregister_for_game" });
+    console.log("uregister");
+  }
+
+  sendChallenge(peer_id: string, nickname: string) {
+    this.send({ type: "send_challenge", peer_id, nickname });
+  }
+
+  respondChallenge(peer_id: string, accepted: boolean) {
+    this.send({ type: "respond_challenge", peer_id, accepted });
+  }
+
+  // --- Internal send helper ---
   private send(data: WsIncoming) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
